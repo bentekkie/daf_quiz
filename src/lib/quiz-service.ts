@@ -5,13 +5,13 @@ import path from 'path';
 import { getTodaysDaf } from '@/lib/sefaria';
 import { generateDailyQuiz, GenerateDailyQuizOutput } from '@/ai/flows/generate-daily-quiz';
 
-const CACHE_DIR = path.join(process.cwd(), '.cache', 'quizzes');
+const CACHE_DIR = () => path.join(process.env.APP_ROOT || process.cwd(), '.cache', 'quizzes');
 
 async function getCacheFilePath(date: Date): Promise<string> {
   // Use a simple YYYY-MM-DD format for the filename.
   const date_tag = date.toISOString().split('T')[0];
   const fileName = `${date_tag}.json`;
-  return path.join(CACHE_DIR, fileName);
+  return path.join(CACHE_DIR(), fileName);
 }
 
 async function getCachedQuiz(date: Date): Promise<GenerateDailyQuizOutput | null> {
@@ -30,9 +30,10 @@ async function getCachedQuiz(date: Date): Promise<GenerateDailyQuizOutput | null
 
 async function setCachedQuiz(date: Date, quiz: GenerateDailyQuizOutput): Promise<void> {
   try {
-    await fs.mkdir(CACHE_DIR, { recursive: true });
+    await fs.mkdir(CACHE_DIR(), { recursive: true });
     const filePath = await getCacheFilePath(date);
     await fs.writeFile(filePath, JSON.stringify(quiz), 'utf-8');
+    console.log(`Wrote quiz to ${filePath}`)
   } catch (error) {
     console.error('Error writing to quiz cache:', error);
   }

@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {Question} from '@/lib/types';
 import {z} from 'genkit';
 
 const GenerateDailyQuizInputSchema = z.object({
@@ -18,8 +19,17 @@ const GenerateDailyQuizInputSchema = z.object({
 });
 export type GenerateDailyQuizInput = z.infer<typeof GenerateDailyQuizInputSchema>;
 
+const QuestionSchema = z.object({
+  questionNumber: z.number().describe('The question number, starting from 1.'),
+  questionText: z.string().describe('The text of the quiz question.'),
+  options: z.array(z.string()).describe('An array of 4 multiple choice options.'),
+  correctAnswer: z.string().describe('The text of the correct answer.'),
+  correctAnswerIndex: z.number().describe('The index of the correct answer in the options array.'),
+  reference: z.string().describe('A reference to the section in the text where the answer can be found.'),
+});
+
 const GenerateDailyQuizOutputSchema = z.object({
-  quiz: z.string().describe('The generated quiz questions and answers.'),
+  questions: z.array(QuestionSchema).describe('An array of 5 quiz questions.'),
 });
 export type GenerateDailyQuizOutput = z.infer<typeof GenerateDailyQuizOutputSchema>;
 
@@ -32,13 +42,12 @@ const generateDailyQuizPrompt = ai.definePrompt({
   input: {schema: GenerateDailyQuizInputSchema},
   output: {schema: GenerateDailyQuizOutputSchema},
   prompt: `You are an expert in creating quizzes based on religious texts.
-  Given the text of the current Daf Yomi page, generate a quiz with questions and answers.
-  Include references to specific sections or passages within the text where the answers can be found.
+  Given the text of the current Daf Yomi page, generate a quiz with 5 multiple-choice questions.
+  For each question, provide 4 options, the correct answer text, the index of the correct answer, and a reference to the specific passage.
+  Ensure the response is a valid JSON object matching the provided schema.
 
   Daf Yomi Text:
-  {{{
-dafYomiText
-  }}}
+  {{{dafYomiText}}}
   `,
 });
 
@@ -50,6 +59,9 @@ const generateDailyQuizFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await generateDailyQuizPrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('Failed to generate quiz.');
+    }
+    return output;
   }
 );

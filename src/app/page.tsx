@@ -4,23 +4,26 @@ import { Footer } from '@/components/layout/footer';
 import { QuizClient } from '@/components/quiz/quiz-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getTodaysDaf } from '@/lib/sefaria';
-import { parseQuiz } from '@/lib/quiz-parser';
 import { Terminal } from 'lucide-react';
+import type { QuizData } from '@/lib/types';
 
 export default async function Home() {
   let dafRef = '';
-  let quizData = null;
+  let quizData: QuizData | null = null;
   let error = null;
 
   try {
     const daf = await getTodaysDaf();
     dafRef = daf.ref;
     const quizResult = await generateDailyQuiz({ dafYomiText: daf.text });
-    if (quizResult?.quiz) {
-      quizData = parseQuiz(quizResult.quiz, dafRef);
+    if (quizResult?.questions && quizResult.questions.length > 0) {
+      quizData = {
+        title: `Daily Quiz: ${dafRef}`,
+        questions: quizResult.questions,
+      };
     }
     if (!quizData) {
-        throw new Error("Failed to generate or parse the quiz. The AI may be unable to create a quiz from today's text.");
+        throw new Error("Failed to generate the quiz. The AI may be unable to create a quiz from today's text.");
     }
   } catch (e: any) {
     console.error(e);

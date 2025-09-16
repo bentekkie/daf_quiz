@@ -11,9 +11,9 @@ const flattenText = (arr: any[]): string[] => {
   );
 };
 
-export async function getTodaysDaf(): Promise<Daf> {
+export async function getTodaysDaf(date: Date): Promise<Daf> {
   try {
-    const calendarRes = await fetch('https://www.sefaria.org/api/calendars', {
+    const calendarRes = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${date.getFullYear()}&month=${date.getMonth() + 1}&day=${date.getDate()}`, {
       next: { revalidate: 3600 }, // Cache calendar for 1 hour
     });
 

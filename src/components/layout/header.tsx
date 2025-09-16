@@ -5,7 +5,7 @@ type HeaderProps = {
 };
 
 export function Header({ dafRef }: HeaderProps) {
-  const sefariaUrl = dafRef ? `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}` : '#';
+  const sefariaUrl = dafRef ? `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}a` : '#';
 
   return (
     <header className="bg-card border-b shadow-sm sticky top-0 z-40">

@@ -7,17 +7,16 @@ import { generateDailyQuiz, GenerateDailyQuizOutput } from '@/ai/flows/generate-
 
 const CACHE_DIR = path.join(process.cwd(), '.cache', 'quizzes');
 
-async function getCacheFilePath(): Promise<string> {
-  const today = new Date();
+async function getCacheFilePath(date: Date): Promise<string> {
   // Use a simple YYYY-MM-DD format for the filename.
-  const date_tag = today.toISOString().split('T')[0];
+  const date_tag = date.toISOString().split('T')[0];
   const fileName = `${date_tag}.json`;
   return path.join(CACHE_DIR, fileName);
 }
 
-async function getCachedQuiz(): Promise<GenerateDailyQuizOutput | null> {
+async function getCachedQuiz(date: Date): Promise<GenerateDailyQuizOutput | null> {
   try {
-    const filePath = await getCacheFilePath();
+    const filePath = await getCacheFilePath(date);
     const data = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(data) as GenerateDailyQuizOutput;
   } catch (error: any) {
@@ -29,10 +28,10 @@ async function getCachedQuiz(): Promise<GenerateDailyQuizOutput | null> {
   }
 }
 
-async function setCachedQuiz(quiz: GenerateDailyQuizOutput): Promise<void> {
+async function setCachedQuiz(date: Date, quiz: GenerateDailyQuizOutput): Promise<void> {
   try {
     await fs.mkdir(CACHE_DIR, { recursive: true });
-    const filePath = await getCacheFilePath();
+    const filePath = await getCacheFilePath(date);
     await fs.writeFile(filePath, JSON.stringify(quiz), 'utf-8');
   } catch (error) {
     console.error('Error writing to quiz cache:', error);
@@ -40,9 +39,11 @@ async function setCachedQuiz(quiz: GenerateDailyQuizOutput): Promise<void> {
 }
 
 export async function getTodaysQuiz(): Promise<{ dafRef: string; quiz: GenerateDailyQuizOutput }> {
-  let cachedQuiz = await getCachedQuiz();
+  const now = new Date();
+  
+  let cachedQuiz = await getCachedQuiz(now);
 
-  const daf = await getTodaysDaf();
+  const daf = await getTodaysDaf(now);
 
   if (cachedQuiz) {
     return { dafRef: daf.ref, quiz: cachedQuiz };
@@ -51,7 +52,7 @@ export async function getTodaysQuiz(): Promise<{ dafRef: string; quiz: GenerateD
   const newQuiz = await generateDailyQuiz({ dafYomiText: daf.text });
 
   if (newQuiz) {
-    await setCachedQuiz(newQuiz);
+    await setCachedQuiz(now, newQuiz);
   } else {
     throw new Error('Failed to generate a new quiz.');
   }

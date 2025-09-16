@@ -30,26 +30,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header dafRef={dafRef} />
-      <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
-        {error ? (
-          <Alert variant="destructive" className="max-w-2xl">
-            <Terminal className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : quizData ? (
-          <QuizClient quiz={quizData} />
-        ) : (
-           <Alert className="max-w-2xl">
-            <Terminal className="h-4 w-4" />
-            <AlertTitle>Quiz Unavailable</AlertTitle>
-            <AlertDescription>
-              The quiz for today could not be loaded. Please try again later.
-            </AlertDescription>
-          </Alert>
-        )}
-      </main>
+       <QuizClient quiz={quizData} dafRef={dafRef} error={error} />
       <Footer />
     </div>
   );

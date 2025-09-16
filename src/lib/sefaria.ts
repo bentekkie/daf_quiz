@@ -33,7 +33,7 @@ export async function getTodaysDaf(): Promise<Daf> {
     const dafRef = dafYomiItem.ref;
 
     // Fetch the text of the daf. commentary=0 removes commentaries, context=1 ensures we get the full page.
-    const textRes = await fetch(`https://www.sefaria.org/api/texts/${dafRef}?commentary=0&context=1`, {
+    const textRes = await fetch(`https://www.sefaria.org/api/v3/texts/${dafRef}?commentary=0&context=1&version=english`, {
       next: { revalidate: 86400 }, // Cache daf text for 24 hours
     });
 
@@ -44,26 +44,7 @@ export async function getTodaysDaf(): Promise<Daf> {
     const textData = await textRes.json();
     
     // The English text is in the 'en' property and can be a string or a nested array of strings.
-    let fullEnText = '';
-    if(typeof textData.en === 'string'){
-      fullEnText = textData.en;
-    } else if (Array.isArray(textData.en)) {
-      fullEnText = flattenText(textData.en).join(' ');
-    }
-
-    // If English text is empty, try to get Hebrew text as a fallback.
-    if (!fullEnText) {
-      let fullHeText = '';
-      if(typeof textData.he === 'string'){
-        fullHeText = textData.he;
-      } else if (Array.isArray(textData.he)) {
-        fullHeText = flattenText(textData.he).join(' ');
-      }
-      
-      if(fullHeText) {
-        fullEnText = fullHeText;
-      }
-    }
+    let fullEnText = flattenText(textData.versions[0].text).join('\n');
 
     if (!fullEnText) {
       throw new Error(`Text for ${dafRef} is empty or not available in English or Hebrew.`);

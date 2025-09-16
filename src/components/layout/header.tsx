@@ -1,3 +1,5 @@
+'use client';
+
 import { BookOpenCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,7 +14,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "../ui/button";
 
 type HeaderProps = {
   dafRef?: string;
@@ -26,19 +27,10 @@ export function Header({ dafRef, quizInProgress, onReset }: HeaderProps) {
     ? `https://www.sefaria.org/${dafRef.replace(/ /g, "_")}a`
     : "#";
 
-  const handleLogoClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (quizInProgress) {
-      e.preventDefault();
-    } else {
-      router.push('/');
-    }
-  };
-  
   const handleResetConfirm = () => {
     if (onReset) {
       onReset();
     }
-    router.push('/');
   }
 
   const LogoLink = () => (
@@ -56,7 +48,7 @@ export function Header({ dafRef, quizInProgress, onReset }: HeaderProps) {
         {quizInProgress ? (
            <AlertDialog>
             <AlertDialogTrigger asChild>
-              <div onClick={handleLogoClick}><LogoLink /></div>
+              <div><LogoLink /></div>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>

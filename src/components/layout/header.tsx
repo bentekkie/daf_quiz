@@ -5,6 +5,8 @@ type HeaderProps = {
 };
 
 export function Header({ dafRef }: HeaderProps) {
+  const sefariaUrl = dafRef ? `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}` : '#';
+
   return (
     <header className="bg-card border-b shadow-sm sticky top-0 z-40">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -16,7 +18,15 @@ export function Header({ dafRef }: HeaderProps) {
         </div>
         {dafRef && (
           <div className="text-xs sm:text-sm font-medium text-muted-foreground bg-muted px-2 sm:px-3 py-1.5 rounded-md text-center">
-            Today's Daf: <span className="font-bold text-foreground">{dafRef}</span>
+            Today's Daf:{" "}
+            <a
+              href={sefariaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-foreground underline hover:text-primary"
+            >
+              {dafRef}
+            </a>
           </div>
         )}
       </div>

@@ -15,3 +15,4 @@ services:
     volumes:
       # Mount the cache directory to persist the daily quiz across container restarts
       - ./.cache:/app/.cache
+      - .env:/app/.env

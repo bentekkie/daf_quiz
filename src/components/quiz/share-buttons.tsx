@@ -31,7 +31,7 @@ export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
             try {
                 await navigator.share(shareData);
             } catch (err) {
-                console.error('Error sharing:', err);
+                console.warn('Error sharing:', err);
                 // The user might have cancelled the share, so we don't necessarily show an error.
             }
         } else {

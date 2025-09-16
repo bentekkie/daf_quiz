@@ -1,9 +1,8 @@
-import { generateDailyQuiz } from '@/ai/flows/generate-daily-quiz';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { QuizClient } from '@/components/quiz/quiz-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getTodaysDaf } from '@/lib/sefaria';
+import { getTodaysQuiz } from '@/lib/quiz-service';
 import { Terminal } from 'lucide-react';
 import type { QuizData } from '@/lib/types';
 
@@ -13,13 +12,12 @@ export default async function Home() {
   let error = null;
 
   try {
-    const daf = await getTodaysDaf();
-    dafRef = daf.ref;
-    const quizResult = await generateDailyQuiz({ dafYomiText: daf.text });
-    if (quizResult?.questions && quizResult.questions.length > 0) {
+    const quizResult = await getTodaysQuiz();
+    dafRef = quizResult.dafRef;
+    if (quizResult.quiz?.questions && quizResult.quiz.questions.length > 0) {
       quizData = {
         title: `Daily Quiz: ${dafRef}`,
-        questions: quizResult.questions,
+        questions: quizResult.quiz.questions,
       };
     }
     if (!quizData) {

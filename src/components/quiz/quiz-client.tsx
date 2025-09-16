@@ -19,7 +19,7 @@ export function QuizClient({ quiz }: QuizClientProps) {
   const [quizState, setQuizState] = useState<QuizState>('not-started');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
-  const [currentSelection, setCurrentSelection] = useState<number | null>(null);
+  const [currentSelection, setCurrentSelection] = useState<string | null>(null);
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const totalQuestions = quiz.questions.length;
@@ -29,17 +29,20 @@ export function QuizClient({ quiz }: QuizClientProps) {
   };
 
   const handleSelection = (value: string) => {
-    setCurrentSelection(Number(value));
+    setCurrentSelection(value);
   };
   
-  const handleNext = () => {
+  const handleSubmitAnswer = () => {
     if (currentSelection !== null) {
-      const updatedAnswers = { ...selectedAnswers, [currentQuestionIndex]: currentSelection };
-      setSelectedAnswers(updatedAnswers);
-      
-      setCurrentSelection(null);
+      const newSelectedAnswers = {
+        ...selectedAnswers,
+        [currentQuestionIndex]: Number(currentSelection),
+      };
+      setSelectedAnswers(newSelectedAnswers);
+
       if (currentQuestionIndex < totalQuestions - 1) {
         setCurrentQuestionIndex(prev => prev + 1);
+        setCurrentSelection(null); // Reset selection for the next question
       } else {
         setQuizState('completed');
       }
@@ -82,7 +85,7 @@ export function QuizClient({ quiz }: QuizClientProps) {
       </CardHeader>
       <CardContent>
         <RadioGroup
-          value={currentSelection?.toString()}
+          value={currentSelection ?? ''}
           onValueChange={handleSelection}
           className="space-y-4"
         >
@@ -94,7 +97,7 @@ export function QuizClient({ quiz }: QuizClientProps) {
           ))}
         </RadioGroup>
         <div className="mt-6 flex justify-end">
-          <Button onClick={handleNext} disabled={currentSelection === null}>
+          <Button onClick={handleSubmitAnswer} disabled={currentSelection === null}>
             {currentQuestionIndex < totalQuestions - 1 ? 'Next' : 'Finish Quiz'}
           </Button>
         </div>

@@ -15,10 +15,10 @@ const TwitterIcon = () => (
 
 export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
     const { toast } = useToast();
-    const shareText = `I scored ${scorePercentage}% on today's Daf Yomi quiz (${dafRef}) on Daf Quizzer! Can you beat my score?`;
+    const sefariaUrl = `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}`;
+    const shareText = `I scored ${scorePercentage}% on today's Daf Yomi quiz (${dafRef}) on Daf Quizzer! Can you beat my score? Check out the daf: ${sefariaUrl}`;
     const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const encodedText = encodeURIComponent(shareText);
-    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodeURIComponent(shareUrl)}&hashtags=DafYomi,Talmud,DafQuizzer`;
+    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=DafYomi,Talmud,DafQuizzer`;
 
     const handleCopyToClipboard = () => {
         if (!navigator.clipboard) {
@@ -29,9 +29,12 @@ export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
             });
             return;
         }
-        navigator.clipboard.writeText(`${shareText} ${shareUrl}`)
+        navigator.clipboard.writeText(`${shareText}`)
             .then(() => {
-                console.log('Results copied to clipboard!');
+                toast({
+                    title: "Copied to clipboard!",
+                    description: "Share your results with your friends.",
+                });
             })
             .catch(err => {
                 console.error('Failed to copy text: ', err);

@@ -37,6 +37,10 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef }: QuizRes
     return "Keep studying! Every day is a new opportunity to learn.";
   };
 
+  const getSefariaUrl = (dafRef: string) => {
+    return `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}a`;
+  }
+
   return (
     <Card className="w-full max-w-2xl shadow-lg animate-in fade-in zoom-in-95">
       <CardHeader className="items-center text-center">
@@ -65,7 +69,7 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef }: QuizRes
                         <p className="font-semibold">{q.questionText}</p>
                         <p>Your answer: <span className={!isCorrect ? 'text-destructive font-medium' : 'text-green-600'}>{q.options[userAnswerIndex] ?? 'Not answered'}</span></p>
                         {!isCorrect && <p>Correct answer: <span className="font-medium text-green-600">{q.correctAnswer}</span></p>}
-                        <p className="text-sm text-muted-foreground">Reference: {q.reference}</p>
+                        <p className="text-sm text-muted-foreground">Reference: <a href={getSefariaUrl(dafRef)} target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{q.reference}</a></p>
                     </AccordionContent>
                 </AccordionItem>
                 );

@@ -51,8 +51,22 @@ export async function getTodaysDaf(): Promise<Daf> {
       fullEnText = flattenText(textData.en).join(' ');
     }
 
+    // If English text is empty, try to get Hebrew text as a fallback.
     if (!fullEnText) {
-      throw new Error(`English text for ${dafRef} is empty or not available.`);
+      let fullHeText = '';
+      if(typeof textData.he === 'string'){
+        fullHeText = textData.he;
+      } else if (Array.isArray(textData.he)) {
+        fullHeText = flattenText(textData.he).join(' ');
+      }
+      
+      if(fullHeText) {
+        fullEnText = fullHeText;
+      }
+    }
+
+    if (!fullEnText) {
+      throw new Error(`Text for ${dafRef} is empty or not available in English or Hebrew.`);
     }
 
     return { ref: dafRef, text: fullEnText };

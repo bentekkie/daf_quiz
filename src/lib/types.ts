@@ -4,7 +4,11 @@ export interface Question {
   options: string[];
   correctAnswer: string;
   correctAnswerIndex: number;
-  reference: string;
+  reference: {
+    side: 'A' | 'B'
+    line: number
+    text: string
+  };
 }
 
 export interface QuizData {

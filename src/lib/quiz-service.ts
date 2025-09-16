@@ -49,7 +49,7 @@ export async function getTodaysQuiz(): Promise<{ dafRef: string; quiz: GenerateD
     return { dafRef: daf.ref, quiz: cachedQuiz };
   }
 
-  const newQuiz = await generateDailyQuiz({ dafYomiText: daf.text });
+  const newQuiz = await generateDailyQuiz({ dafYomiTextA: daf.textA, dafYomiTextB: daf.textB });
 
   if (newQuiz) {
     await setCachedQuiz(now, newQuiz);

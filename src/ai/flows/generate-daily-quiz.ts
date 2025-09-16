@@ -13,11 +13,21 @@ import {Question} from '@/lib/types';
 import {z} from 'genkit';
 
 const GenerateDailyQuizInputSchema = z.object({
-  dafYomiText: z
+  dafYomiTextA: z
     .string()
-    .describe('The text content of the current Daf Yomi page.'),
+    .describe('The text content of the current Daf Yomi page\'s A side. Each line is prefixed with a line number'),
+  dafYomiTextB: z
+    .string()
+    .describe('The text content of the current Daf Yomi page\'s B side. Each line is prefixed with a line number'),
 });
 export type GenerateDailyQuizInput = z.infer<typeof GenerateDailyQuizInputSchema>;
+
+const ReferenceSchema = z.object({
+  side: z.enum(['A', 'B']),
+  line: z.number(),
+  text: z.string(),
+});
+export type Reference = z.infer<typeof ReferenceSchema>;
 
 const QuestionSchema = z.object({
   questionNumber: z.number().describe('The question number, starting from 1.'),
@@ -25,7 +35,7 @@ const QuestionSchema = z.object({
   options: z.array(z.string()).describe('An array of 4 multiple choice options.'),
   correctAnswer: z.string().describe('The text of the correct answer.'),
   correctAnswerIndex: z.number().describe('The index of the correct answer in the options array.'),
-  reference: z.string().describe('A reference to the section in the text where the answer can be found.'),
+  reference: ReferenceSchema.describe('A reference to the section in the text where the answer can be found.'),
 });
 
 const GenerateDailyQuizOutputSchema = z.object({
@@ -46,8 +56,10 @@ const generateDailyQuizPrompt = ai.definePrompt({
   For each question, provide 4 options, the correct answer text, the index of the correct answer, and a reference to the specific passage.
   Ensure the response is a valid JSON object matching the provided schema.
 
-  Daf Yomi Text:
-  {{{dafYomiText}}}
+  Daf Yomi Text A Side:
+  {{{dafYomiTextA}}}
+  Daf Yomi Text B Side:
+  {{{dafYomiTextB}}}
   `,
 });
 

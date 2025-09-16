@@ -37,8 +37,8 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef }: QuizRes
     return "Keep studying! Every day is a new opportunity to learn.";
   };
 
-  const getSefariaUrl = (dafRef: string) => {
-    return `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}a`;
+  const getSefariaUrl = (dafRef: string, side: string, line: number) => {
+    return `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}${side}.${line}`;
   }
 
   return (
@@ -69,7 +69,7 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef }: QuizRes
                         <p className="font-semibold">{q.questionText}</p>
                         <p>Your answer: <span className={!isCorrect ? 'text-destructive font-medium' : 'text-green-600'}>{q.options[userAnswerIndex] ?? 'Not answered'}</span></p>
                         {!isCorrect && <p>Correct answer: <span className="font-medium text-green-600">{q.correctAnswer}</span></p>}
-                        <p className="text-sm text-muted-foreground">Reference: <a href={getSefariaUrl(dafRef)} target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">{q.reference}</a></p>
+                        <p className="text-sm text-muted-foreground">Reference: <a href={getSefariaUrl(dafRef, q.reference.side.toLowerCase(), q.reference.line)} target="_blank" rel="noopener noreferrer" className="underline">{q.reference.text}</a></p>
                     </AccordionContent>
                 </AccordionItem>
                 );

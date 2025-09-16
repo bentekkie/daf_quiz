@@ -1,6 +1,7 @@
 export interface Daf {
   ref: string;
-  text: string;
+  textA: string;
+  textB: string;
 }
 
 // Helper to flatten nested arrays which can occur in Sefaria's API response
@@ -44,13 +45,16 @@ export async function getTodaysDaf(date: Date): Promise<Daf> {
     const textData = await textRes.json();
     
     // The English text is in the 'en' property and can be a string or a nested array of strings.
-    let fullEnText = flattenText(textData.versions[0].text).join('\n');
+    let linesA: string[] = textData.versions[0].text[0]
+    let textA = linesA.map((l, i) => `${i+1}: ${l}`).join('\n');
+    let linesB: string[] = textData.versions[0].text[1]
+    let textB = linesB.map((l, i) => `${i+1}: ${l}`).join('\n');
 
-    if (!fullEnText) {
+    if (!textA || !textB) {
       throw new Error(`Text for ${dafRef} is empty or not available in English or Hebrew.`);
     }
 
-    return { ref: dafRef, text: fullEnText };
+    return { ref: dafRef, textA: textA, textB: textB };
   } catch (error) {
     console.error("Error fetching today's daf:", error);
     // Re-throw a more user-friendly error for the UI to catch

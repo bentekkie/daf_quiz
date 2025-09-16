@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
+import { FacebookSDK } from '@/components/facebook-sdk';
 
 export const metadata: Metadata = {
   title: 'Daf Quizzer',
@@ -21,6 +22,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Literata&display=swap" rel="stylesheet" />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
+        <FacebookSDK />
         {children}
         <Toaster />
       </body>

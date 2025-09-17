@@ -1,5 +1,5 @@
 import 'server-only';
-
+import { unstable_noStore as noStore } from 'next/cache';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { getTodaysDaf } from '@/lib/sefaria';
@@ -40,6 +40,7 @@ async function setCachedQuiz(date: Date, quiz: GenerateDailyQuizOutput): Promise
 }
 
 export async function getTodaysQuiz(): Promise<{ dafRef: string; quiz: GenerateDailyQuizOutput }> {
+  noStore();
   const now = new Date();
   
   let cachedQuiz = await getCachedQuiz(now);

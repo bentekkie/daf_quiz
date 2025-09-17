@@ -13,9 +13,10 @@ const flattenText = (arr: any[]): string[] => {
 };
 
 export async function getTodaysDaf(date: Date): Promise<Daf> {
+  const dateTag = date.toISOString().split('T')[0];
   try {
     const calendarRes = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${date.getFullYear()}&month=${date.getMonth() + 1}&day=${date.getDate()}`, {
-      next: { revalidate: 3600 }, // Cache calendar for 1 hour
+      next: { revalidate: 86400, tags: ['sefaria-calendar', dateTag] }, // Cache for 24h, but tag with date.
     });
 
     if (!calendarRes.ok) {
@@ -51,7 +52,7 @@ export async function getTodaysDaf(date: Date): Promise<Daf> {
     let textB = linesB.map((l, i) => `${i+1}: ${l}`).join('\n');
 
     if (!textA || !textB) {
-      throw new Error(`Text for ${dafRef} is empty or not available in English or Hebrew.`);
+      throw new Error(`English and/or Hebrew text for ${dafRef} is empty or not available.`);
     }
 
     return { ref: dafRef, textA: textA, textB: textB };

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'Daf Quizzer',
   description: 'A daily quiz for the current Daf Yomi page.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

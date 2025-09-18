@@ -1,0 +1,9 @@
+{
+  "name": "Daf Quizzer",
+  "short_name": "DafQuizzer",
+  "description": "A daily quiz for the current Daf Yomi page.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F0F0F0",
+  "theme_color": "#3F51B5"
+}

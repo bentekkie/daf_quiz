@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'Daf Quizzer',
   description: 'A daily quiz for the current Daf Yomi page.',
-  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -18,6 +17,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Literata&display=swap" rel="stylesheet" />
       </head>

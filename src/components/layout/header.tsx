@@ -1,8 +1,7 @@
 'use client';
 
-import { BookOpenCheck } from "lucide-react";
+import { BookOpenCheck, Flame } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,15 +13,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 type HeaderProps = {
   dafRef?: string;
   quizInProgress?: boolean;
   onReset?: () => void;
+  streak?: number;
 };
 
-export function Header({ dafRef, quizInProgress, onReset }: HeaderProps) {
-  const router = useRouter();
+export function Header({ dafRef, quizInProgress, onReset, streak = 0 }: HeaderProps) {
   const sefariaUrl = dafRef
     ? `https://www.sefaria.org/${dafRef.replace(/ /g, "_")}a`
     : "#";
@@ -69,19 +69,34 @@ export function Header({ dafRef, quizInProgress, onReset }: HeaderProps) {
           <Link href="/"><LogoLink /></Link>
         )}
        
-        {dafRef && (
-          <div className="text-xs sm:text-sm font-medium text-muted-foreground bg-muted px-2 sm:px-3 py-1.5 rounded-md text-center">
-            Today's Daf:{" "}
-            <a
-              href={sefariaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-foreground underline hover:text-primary"
-            >
-              {dafRef}
-            </a>
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          {dafRef && (
+            <div className="text-xs sm:text-sm font-medium text-muted-foreground bg-muted px-2 sm:px-3 py-1.5 rounded-md text-center">
+              Today's Daf:{" "}
+              <a
+                href={sefariaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-foreground underline hover:text-primary"
+              >
+                {dafRef}
+              </a>
+            </div>
+          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <div className="flex items-center gap-1 text-accent">
+                  <Flame className="h-5 w-5"/>
+                  <span className="font-bold text-sm">{streak}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Your current streak</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
     </header>
   );

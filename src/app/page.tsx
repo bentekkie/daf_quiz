@@ -1,9 +1,6 @@
-import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { QuizClient } from '@/components/quiz/quiz-client';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getTodaysQuiz } from '@/lib/quiz-service';
-import { Terminal } from 'lucide-react';
 import type { QuizData } from '@/lib/types';
 
 export default async function Home() {

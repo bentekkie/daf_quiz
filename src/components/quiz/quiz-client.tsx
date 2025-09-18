@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { QuizData } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { QuizResults } from './quiz-results';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { Terminal } from 'lucide-react';
 import { Header } from '../layout/header';
+import { useStreak } from '@/hooks/useStreak';
 
 interface QuizClientProps {
   quiz: QuizData | null;
@@ -25,6 +26,7 @@ export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [currentSelection, setCurrentSelection] = useState<string | null>(null);
+  const { streak, updateStreak } = useStreak();
   
   const handleStart = () => {
     setQuizState('in-progress');
@@ -58,10 +60,16 @@ export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
     setCurrentSelection(null);
   };
 
+  useEffect(() => {
+    if (quizState === 'completed') {
+      updateStreak();
+    }
+  }, [quizState, updateStreak]);
+
   if (error) {
     return (
       <>
-        <Header dafRef={dafRef} />
+        <Header dafRef={dafRef} streak={streak} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
             <Alert variant="destructive" className="max-w-2xl">
               <Terminal className="h-4 w-4" />
@@ -76,7 +84,7 @@ export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
   if (!quiz) {
     return (
         <>
-            <Header dafRef={dafRef} />
+            <Header dafRef={dafRef} streak={streak} />
             <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
                 <Alert className="max-w-2xl">
                     <Terminal className="h-4 w-4" />
@@ -96,7 +104,7 @@ export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
 
   return (
     <>
-        <Header dafRef={dafRef} quizInProgress={quizInProgress} onReset={handleReset}/>
+        <Header dafRef={dafRef} quizInProgress={quizInProgress} onReset={handleReset} streak={streak} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
         {quizState === 'not-started' && (
             <Card className="w-full max-w-2xl shadow-lg animate-in fade-in zoom-in-95">

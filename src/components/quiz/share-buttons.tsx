@@ -19,8 +19,9 @@ export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
     const quizUrl = typeof window !== 'undefined' ? window.location.href : '';
     const sefariaUrl = `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}`;
 
-    const shareText = `I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge here: ${quizUrl}\n\nStudy the daf on Sefaria: ${sefariaUrl}`;
-    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge here. #DafYomi #Talmud`)}&url=${encodeURIComponent(quizUrl)}`;
+    const shareText = `I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge. You can study the daf on Sefaria: ${sefariaUrl}`;
+    const twitterShareText = `I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge here. #DafYomi #Talmud`;
+    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterShareText)}&url=${encodeURIComponent(quizUrl)}`;
 
     const handleShare = async () => {
         const shareData = {
@@ -44,7 +45,7 @@ export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
                 });
                 return;
             }
-            navigator.clipboard.writeText(shareText)
+            navigator.clipboard.writeText(`${shareText} ${quizUrl}`)
                 .then(() => {
                     toast({
                         title: "Copied to clipboard!",

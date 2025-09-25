@@ -15,10 +15,9 @@ const TwitterIcon = () => (
 
 export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
     const { toast } = useToast();
-    const sefariaUrl = `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}`;
-    const shareText = `I scored ${scorePercentage}% on today's Daf Yomi quiz (${dafRef}) on Daf Quizzer! Can you beat my score? Check out the daf: ${sefariaUrl}`;
     const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=DafYomi,Talmud,DafQuizzer`;
+    const shareText = `I scored ${scorePercentage}% on today's ${dafRef} quiz! Think you can do better? Test your knowledge here: ${shareUrl}`;
+    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&hashtags=DafYomi,Talmud,DafQuizzer`;
 
     const handleShare = async () => {
         const shareData = {

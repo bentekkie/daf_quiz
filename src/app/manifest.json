@@ -1,6 +1,6 @@
 {
-  "name": "Daf Quizzer",
-  "short_name": "DafQuizzer",
+  "name": "Daf Quiz",
+  "short_name": "DafQuiz",
   "description": "A daily quiz for the current Daf Yomi page.",
   "start_url": "/",
   "display": "standalone",

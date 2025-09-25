@@ -1,6 +1,6 @@
-# Daf Quizzer
+# Daf Quiz
 
-Daf Quizzer is a web application that generates a daily multiple-choice quiz based on the current Daf Yomi, the daily regimen of learning the Talmud.
+Daf Quiz is a web application that generates a daily multiple-choice quiz based on the current Daf Yomi, the daily regimen of learning the Talmud.
 
 It fetches the daily page from the Sefaria API, uses Google's Gemini model via Genkit to generate questions, and provides an interactive quiz experience for users to test their knowledge.
 

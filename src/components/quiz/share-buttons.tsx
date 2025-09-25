@@ -19,13 +19,13 @@ export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
     const quizUrl = typeof window !== 'undefined' ? window.location.href : '';
     const sefariaUrl = `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}`;
 
-    const shareText = `I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge. You can study the daf on Sefaria: ${sefariaUrl}`;
+    const shareText = `I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge on Daf Quiz. You can study the daf on Sefaria: ${sefariaUrl}`;
     const twitterShareText = `I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge here. #DafYomi #Talmud`;
     const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterShareText)}&url=${encodeURIComponent(quizUrl)}`;
 
     const handleShare = async () => {
         const shareData = {
-            title: 'Daf Quizzer',
+            title: 'Daf Quiz',
             text: shareText,
             url: quizUrl,
         };

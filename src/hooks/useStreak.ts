@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { isToday, isYesterday, parseISO, format } from 'date-fns';
 
-const STREAK_KEY = 'dafQuizzerStreak';
+const STREAK_KEY = 'dafQuizStreak';
 
 interface StreakData {
   count: number;

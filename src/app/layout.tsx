@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { GoogleAnalytics } from '@next/third-parties/google'
 
 export const metadata: Metadata = {
-  title: 'Daf Quizzer',
+  title: 'Daf Quiz',
   description: 'A daily quiz for the current Daf Yomi page.',
 };
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -15,15 +16,17 @@ const TwitterIcon = () => (
 
 export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
     const { toast } = useToast();
-    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const shareText = `I scored ${scorePercentage}% on today's ${dafRef} quiz! Think you can do better? Test your knowledge here: ${shareUrl}`;
-    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&hashtags=DafYomi,Talmud,DafQuizzer`;
+    const quizUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const sefariaUrl = `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}`;
+
+    const shareText = `I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge here: ${quizUrl}\n\nStudy the daf on Sefaria: ${sefariaUrl}`;
+    const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just took the daily Daf Yomi quiz for ${dafRef}! Test your knowledge here. #DafYomi #Talmud`)}&url=${encodeURIComponent(quizUrl)}`;
 
     const handleShare = async () => {
         const shareData = {
-            title: 'Daf Quizzer Score',
+            title: 'Daf Quizzer',
             text: shareText,
-            url: shareUrl,
+            url: quizUrl,
         };
 
         if (navigator.share) {
@@ -31,10 +34,8 @@ export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
                 await navigator.share(shareData);
             } catch (err) {
                 console.warn('Error sharing:', err);
-                // The user might have cancelled the share, so we don't necessarily show an error.
             }
         } else {
-            // Fallback to copy to clipboard
             if (!navigator.clipboard) {
                 toast({
                     variant: "destructive",
@@ -43,7 +44,7 @@ export function ShareButtons({ scorePercentage, dafRef }: ShareButtonsProps) {
                 });
                 return;
             }
-            navigator.clipboard.writeText(`${shareText}`)
+            navigator.clipboard.writeText(shareText)
                 .then(() => {
                     toast({
                         title: "Copied to clipboard!",

@@ -2,6 +2,7 @@
 
 import { BookOpenCheck, Flame, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,10 +19,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { QuizTypeName, QuizTypes } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 type HeaderProps = {
   dafRef?: string;
@@ -32,35 +36,44 @@ type HeaderProps = {
 };
 
 export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }: HeaderProps) {
+  const router = useRouter();
+
   const sefariaUrl = dafRef
-    ? `https://www.sefaria.org/${dafRef.replace(/ /g, "_")}a`
+    ? `https://www.sefaria.org/${dafRef.replace(/ /g, "_")}`
     : "#";
 
   const handleResetConfirm = () => {
     if (onReset) {
       onReset();
+      router.push('/');
     }
+  }
+
+  const handleQuizTypeChange = (value: string) => {
+    router.push(`/${value}`);
   }
 
   const LogoLink = () => (
     <div className="flex items-center gap-3 cursor-pointer">
       <BookOpenCheck className="h-8 w-8 text-primary" />
       <h1 className="text-xl md:text-2xl font-headline font-bold text-primary">
-         <DropdownMenu>
+        <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <span className="flex items-center gap-1 hover:underline cursor-pointer">
-              Daf
+              {quizType ? quizType.split(' ')[0] : 'Daf'}
               <ChevronDown className="h-4 w-4" />
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            {Object.entries(QuizTypes).map(([key, { name, disabled }]) => (
-              <Link key={name} href={`/${key}`} passHref>
-                <DropdownMenuItem disabled={disabled}>
-                  {name}
-                </DropdownMenuItem>
-              </Link>
-            ))}
+            <DropdownMenuLabel>Select a Quiz</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup value={quizType || ''} onValueChange={(value) => handleQuizTypeChange(value)}>
+              {Object.entries(QuizTypes).map(([key, { name, disabled }]) => (
+                 <DropdownMenuRadioItem key={key} value={key} disabled={disabled}>
+                   {name}
+                 </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
         {' '}Quiz
@@ -72,9 +85,9 @@ export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }
     <header className="bg-card border-b shadow-sm sticky top-0 z-40">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         {quizInProgress ? (
-           <AlertDialog>
+          <AlertDialog>
             <AlertDialogTrigger asChild>
-              <div><LogoLink /></div>
+              <div onClick={(e) => e.preventDefault()}><LogoLink /></div>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -92,9 +105,9 @@ export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }
             </AlertDialogContent>
           </AlertDialog>
         ) : (
-          <Link href="/"><LogoLink /></Link>
+          <div onClick={() => router.push('/')}><LogoLink /></div>
         )}
-       
+
         <div className="flex items-center gap-4">
           {dafRef && (
             <div className="text-xs sm:text-sm font-medium text-muted-foreground bg-muted px-2 sm:px-3 py-1.5 rounded-md text-center">
@@ -113,7 +126,7 @@ export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }
             <Tooltip>
               <TooltipTrigger>
                 <div className="flex items-center gap-1 text-accent">
-                  <Flame className="h-5 w-5"/>
+                  <Flame className="h-5 w-5" />
                   <span className="font-bold text-sm">{streak}</span>
                 </div>
               </TooltipTrigger>

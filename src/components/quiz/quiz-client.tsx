@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { QuizData, QuizTypeName } from '@/lib/types';
+import type { QuizData, QuizTypeName, QuizTypeHref } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -16,13 +16,14 @@ import { useStreak } from '@/hooks/useStreak';
 interface QuizClientProps {
   quiz: QuizData | null;
   quizType: QuizTypeName | null;
+  quizHref: QuizTypeHref | null;
   dafRef: string;
   error: string | null;
 }
 
 type QuizState = 'not-started' | 'in-progress' | 'completed';
 
-export function QuizClient({ quiz, dafRef, quizType, error }: QuizClientProps) {
+export function QuizClient({ quiz, dafRef, quizType, quizHref, error }: QuizClientProps) {
   const [quizState, setQuizState] = useState<QuizState>('not-started');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
@@ -155,7 +156,7 @@ export function QuizClient({ quiz, dafRef, quizType, error }: QuizClientProps) {
         )}
 
         {quizState === 'completed' && (
-            <QuizResults questions={quiz.questions} userAnswers={selectedAnswers} onReset={handleReset} dafRef={dafRef} quizType={quizType}/>
+            <QuizResults questions={quiz.questions} userAnswers={selectedAnswers} onReset={handleReset} dafRef={dafRef} quizType={quizType!}/>
         )}
         </main>
     </>

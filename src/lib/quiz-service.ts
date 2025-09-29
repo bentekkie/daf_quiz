@@ -42,6 +42,7 @@ async function setCachedQuiz(date: Date, quiz: GenerateDailyQuizOutput, quizType
 }
 
 export async function getTodaysQuiz(quizType: QuizTypeName | null, now: Date): Promise<{ dafRef: string; quiz: GenerateDailyQuizOutput | null }> {
+  noStore()
   if (!quizType) {
     return {
       dafRef: '',

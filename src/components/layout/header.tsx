@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpenCheck, Flame } from "lucide-react";
+import { BookOpenCheck, Flame, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { QuizTypeName, QuizTypes } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type HeaderProps = {
   dafRef?: string;
@@ -47,7 +48,10 @@ export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }
       <h1 className="text-xl md:text-2xl font-headline font-bold text-primary">
          <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <span className="hover:underline cursor-pointer">Daf</span>
+            <span className="flex items-center gap-1 hover:underline cursor-pointer">
+              Daf
+              <ChevronDown className="h-4 w-4" />
+            </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             {Object.entries(QuizTypes).map(([key, { name, disabled }]) => (

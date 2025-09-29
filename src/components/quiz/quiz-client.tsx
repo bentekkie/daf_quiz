@@ -82,6 +82,7 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
 
 
   if (dataError) {
+    console.error(dataError.toString())
     return (
       <>
         <Header dafRefPromise={data} streak={streak} quizType={quizHref} />
@@ -89,7 +90,7 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
             <Alert variant="destructive" className="max-w-2xl">
               <Terminal className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
-              <AlertDescription>Unable to generate quiz</AlertDescription>
+              <AlertDescription>{dataError.toString()}</AlertDescription>
             </Alert>
         </main>
       </>

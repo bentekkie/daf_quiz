@@ -13,17 +13,15 @@ import {Question} from '@/lib/types';
 import {z} from 'genkit';
 
 const GenerateDailyQuizInputSchema = z.object({
-  dafYomiTextA: z
+  pageText: z
     .string()
-    .describe('The text content of the current Daf Yomi page\'s A side. Each line is prefixed with a line number'),
-  dafYomiTextB: z
-    .string()
-    .describe('The text content of the current Daf Yomi page\'s B side. Each line is prefixed with a line number'),
-});
+    .describe('The text content of the current page. Each line is prefixed with line number and optionally a side (A or B).'),
+  quizType: z.enum(['Daily Mishnah', 'Daily Rambam', 'Daf Yomi', '929']).describe('The type of quiz being generated.'),
+  });
 export type GenerateDailyQuizInput = z.infer<typeof GenerateDailyQuizInputSchema>;
 
 const ReferenceSchema = z.object({
-  side: z.enum(['A', 'B']),
+  side: z.enum(['A', 'B']).optional(),
   line: z.number(),
   text: z.string(),
 });
@@ -52,14 +50,12 @@ const generateDailyQuizPrompt = ai.definePrompt({
   input: {schema: GenerateDailyQuizInputSchema},
   output: {schema: GenerateDailyQuizOutputSchema},
   prompt: `You are an expert in creating quizzes based on religious texts.
-  Given the text of the current Daf Yomi page, generate a quiz with 5 multiple-choice questions.
+  Given the text of the current {{{quizType}}} page, generate a quiz with 5 multiple-choice questions.
   For each question, provide 4 options, the correct answer text, the index of the correct answer, and a reference to the specific passage.
   Ensure the response is a valid JSON object matching the provided schema.
 
-  Daf Yomi Text A Side:
-  {{{dafYomiTextA}}}
-  Daf Yomi Text B Side:
-  {{{dafYomiTextB}}}
+  {{{quizType}}} Text:
+  {{{pageText}}}
   `,
 });
 

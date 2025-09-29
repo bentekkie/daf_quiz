@@ -13,16 +13,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { QuizTypeName, QuizTypes } from "@/lib/types";
 
 type HeaderProps = {
   dafRef?: string;
   quizInProgress?: boolean;
   onReset?: () => void;
   streak?: number;
+  quizType: QuizTypeName | null;
 };
 
-export function Header({ dafRef, quizInProgress, onReset, streak = 0 }: HeaderProps) {
+export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }: HeaderProps) {
   const sefariaUrl = dafRef
     ? `https://www.sefaria.org/${dafRef.replace(/ /g, "_")}a`
     : "#";
@@ -37,7 +45,21 @@ export function Header({ dafRef, quizInProgress, onReset, streak = 0 }: HeaderPr
     <div className="flex items-center gap-3 cursor-pointer">
       <BookOpenCheck className="h-8 w-8 text-primary" />
       <h1 className="text-xl md:text-2xl font-headline font-bold text-primary">
-        Daf Quiz
+         <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <span className="hover:underline cursor-pointer">Daf</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {Object.entries(QuizTypes).map(([key, { name, disabled }]) => (
+              <Link key={name} href={`/${key}`} passHref>
+                <DropdownMenuItem disabled={disabled}>
+                  {name}
+                </DropdownMenuItem>
+              </Link>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {' '}Quiz
       </h1>
     </div>
   )
@@ -72,7 +94,7 @@ export function Header({ dafRef, quizInProgress, onReset, streak = 0 }: HeaderPr
         <div className="flex items-center gap-4">
           {dafRef && (
             <div className="text-xs sm:text-sm font-medium text-muted-foreground bg-muted px-2 sm:px-3 py-1.5 rounded-md text-center">
-              Today's Daf:{" "}
+              Today's {quizType}:{" "}
               <a
                 href={sefariaUrl}
                 target="_blank"

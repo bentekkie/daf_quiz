@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Question } from '@/lib/types';
+import type { Question, QuizTypeName } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -13,9 +13,10 @@ interface QuizResultsProps {
   userAnswers: Record<number, number>;
   onReset: () => void;
   dafRef: string;
+  quizType: QuizTypeName;
 }
 
-export function QuizResults({ questions, userAnswers, onReset, dafRef }: QuizResultsProps) {
+export function QuizResults({ questions, userAnswers, onReset, dafRef, quizType }: QuizResultsProps) {
   const { scorePercentage, correctAnswersCount } = useMemo(() => {
     let correct = 0;
     questions.forEach((q, index) => {
@@ -37,7 +38,8 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef }: QuizRes
     return "Keep studying! Every day is a new opportunity to learn.";
   };
 
-  const getSefariaUrl = (dafRef: string, side: string, line: number) => {
+  const getSefariaUrl = (dafRef: string, side: string | undefined, line: number) => {
+    if (!side) return `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}.${line}`;;
     return `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}${side}.${line}`;
   }
 
@@ -69,7 +71,7 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef }: QuizRes
                         <p className="font-semibold">{q.questionText}</p>
                         <p>Your answer: <span className={!isCorrect ? 'text-destructive font-medium' : 'text-green-600'}>{q.options[userAnswerIndex] ?? 'Not answered'}</span></p>
                         {!isCorrect && <p>Correct answer: <span className="font-medium text-green-600">{q.correctAnswer}</span></p>}
-                        <p className="text-sm text-muted-foreground">Reference: <a href={getSefariaUrl(dafRef, q.reference.side.toLowerCase(), q.reference.line)} target="_blank" rel="noopener noreferrer" className="underline">{q.reference.text}</a></p>
+                        <p className="text-sm text-muted-foreground">Reference: <a href={getSefariaUrl(dafRef, q.reference.side?.toLowerCase(), q.reference.line)} target="_blank" rel="noopener noreferrer" className="underline">{q.reference.text}</a></p>
                     </AccordionContent>
                 </AccordionItem>
                 );
@@ -78,7 +80,7 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef }: QuizRes
         </div>
       </CardContent>
       <CardFooter className="flex-col gap-4">
-        <ShareButtons scorePercentage={scorePercentage} dafRef={dafRef} />
+        <ShareButtons scorePercentage={scorePercentage} dafRef={dafRef} quizType={quizType} />
         <Button onClick={onReset} variant="outline">Take Quiz Again</Button>
       </CardFooter>
     </Card>

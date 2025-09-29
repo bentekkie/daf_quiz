@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { GoogleAnalytics } from '@next/third-parties/google'
+import { TabBar } from '@/components/layout/tab-bar';
 
 export const metadata: Metadata = {
   title: 'Daf Quiz',
@@ -23,7 +24,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Literata&display=swap" rel="stylesheet" />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
-        {children}
+          {children}
         <Toaster />
       </body>
       <GoogleAnalytics gaId="G-QKC9S8KQJQ" />

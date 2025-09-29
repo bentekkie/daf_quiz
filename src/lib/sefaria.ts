@@ -1,7 +1,9 @@
-export interface Daf {
+import type { QuizTypeName } from "@/lib/types";
+
+export interface SefariaData {
   ref: string;
-  textA: string;
-  textB: string;
+  text: string;
+  title: string;
 }
 
 // Helper to flatten nested arrays which can occur in Sefaria's API response
@@ -12,7 +14,7 @@ const flattenText = (arr: any[]): string[] => {
   );
 };
 
-export async function getTodaysDaf(date: Date): Promise<Daf> {
+export async function getTodaysSefariaData(quizType: QuizTypeName, date: Date): Promise<SefariaData> {
   const dateTag = date.toISOString().split('T')[0];
   try {
     const calendarRes = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${date.getFullYear()}&month=${date.getMonth() + 1}&day=${date.getDate()}`, {
@@ -23,42 +25,48 @@ export async function getTodaysDaf(date: Date): Promise<Daf> {
       throw new Error(`Failed to fetch Sefaria calendar: ${calendarRes.statusText}`);
     }
     const calendarData = await calendarRes.json();
-
-    const dafYomiItem = calendarData.calendar_items.find(
-      (item: any) => item.title.en === 'Daf Yomi'
+    
+    const calendarItem = calendarData.calendar_items.find(
+      (item: any) => item.title.en === quizType
     );
 
-    if (!dafYomiItem || !dafYomiItem.ref) {
-      throw new Error('Daf Yomi not found in Sefaria calendar for today.');
+    if (!calendarItem || !calendarItem.ref) {
+      throw new Error(`${quizType} not found in Sefaria calendar for today.`);
     }
 
-    const dafRef = dafYomiItem.ref;
+    const itemRef = calendarItem.ref;
 
-    // Fetch the text of the daf. commentary=0 removes commentaries, context=1 ensures we get the full page.
-    const textRes = await fetch(`https://www.sefaria.org/api/v3/texts/${dafRef}?commentary=0&context=1&version=english`, {
-      next: { revalidate: 86400 }, // Cache daf text for 24 hours
+    // Fetch the text of the item. commentary=0 removes commentaries, context=1 ensures we get the full page.
+    const textRes = await fetch(`https://www.sefaria.org/api/v3/texts/${itemRef}?commentary=0&context=1&version=english`, {
+      next: { revalidate: 86400 }, // Cache text for 24 hours
     });
 
     if (!textRes.ok) {
-      throw new Error(`Failed to fetch text for ${dafRef}: ${textRes.statusText}`);
+      throw new Error(`Failed to fetch text for ${itemRef}: ${textRes.statusText}`);
     }
 
     const textData = await textRes.json();
     
     // The English text is in the 'en' property and can be a string or a nested array of strings.
-    let linesA: string[] = textData.versions[0].text[0]
-    let textA = linesA.map((l, i) => `${i+1}: ${l}`).join('\n');
-    let linesB: string[] = textData.versions[0].text[1]
-    let textB = linesB.map((l, i) => `${i+1}: ${l}`).join('\n');
-
-    if (!textA || !textB) {
-      throw new Error(`English and/or Hebrew text for ${dafRef} is empty or not available.`);
+    let text = ''
+    switch(quizType){
+    case "Daf Yomi":
+      const atext : string[] = textData.versions[0].text[0]
+      const btext: string[] = textData.versions[0].text[1]
+      text =atext.map((l, i) => `${i+1}, side A: ${l}`)+ '\n' + btext.map((l, i) => `${i+1}, side B: ${l}`).join('\n');
+    default:
+      const lines: string[] = flattenText(textData.versions[0].text);
+      text = lines.map((l, i) => `${i+1}: ${l}`).join('\n');
     }
 
-    return { ref: dafRef, textA: textA, textB: textB };
+    if (!text) {
+      throw new Error(`Text for ${itemRef} is empty or not available.`);
+    }
+
+    return { ref: itemRef, text: text, title: calendarItem.title.en };
   } catch (error) {
-    console.error("Error fetching today's daf:", error);
+    console.error(`Error fetching today's ${quizType}:`, error);
     // Re-throw a more user-friendly error for the UI to catch
-    throw new Error("Could not retrieve today's Daf Yomi page from Sefaria.org. The service may be temporarily unavailable.");
+    throw new Error(`Could not retrieve today's ${quizType} page from Sefaria.org. The service may be temporarily unavailable.`);
   }
 }

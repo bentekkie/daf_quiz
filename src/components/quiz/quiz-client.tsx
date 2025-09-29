@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { QuizData } from '@/lib/types';
+import type { QuizData, QuizTypeName } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -15,13 +15,14 @@ import { useStreak } from '@/hooks/useStreak';
 
 interface QuizClientProps {
   quiz: QuizData | null;
+  quizType: QuizTypeName | null;
   dafRef: string;
   error: string | null;
 }
 
 type QuizState = 'not-started' | 'in-progress' | 'completed';
 
-export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
+export function QuizClient({ quiz, dafRef, quizType, error }: QuizClientProps) {
   const [quizState, setQuizState] = useState<QuizState>('not-started');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
@@ -66,10 +67,14 @@ export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
     }
   }, [quizState, updateStreak]);
 
+  if (!quizType) {
+    error = 'Invalid quiz type';
+  }
+
   if (error) {
     return (
       <>
-        <Header dafRef={dafRef} streak={streak} />
+        <Header dafRef={dafRef} streak={streak} quizType={quizType} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
             <Alert variant="destructive" className="max-w-2xl">
               <Terminal className="h-4 w-4" />
@@ -84,7 +89,7 @@ export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
   if (!quiz) {
     return (
         <>
-            <Header dafRef={dafRef} streak={streak} />
+            <Header dafRef={dafRef} streak={streak} quizType={quizType} />
             <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
                 <Alert className="max-w-2xl">
                     <Terminal className="h-4 w-4" />
@@ -104,15 +109,15 @@ export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
 
   return (
     <>
-        <Header dafRef={dafRef} quizInProgress={quizInProgress} onReset={handleReset} streak={streak} />
+        <Header dafRef={dafRef} quizInProgress={quizInProgress} onReset={handleReset} streak={streak} quizType={quizType} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
         {quizState === 'not-started' && (
             <Card className="w-full max-w-2xl shadow-lg animate-in fade-in zoom-in-95">
                 <CardHeader>
-                <CardTitle className="text-center text-3xl font-headline">{quiz.title}</CardTitle>
+                <CardTitle className="text-center text-3xl font-headline">{dafRef}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                <p className="text-muted-foreground mb-6">Test your knowledge of today's Daf Yomi. Ready to begin?</p>
+                <p className="text-muted-foreground mb-6">Test your knowledge of today's {quizType}. Ready to begin?</p>
                 <Button onClick={handleStart} size="lg">Start Quiz</Button>
                 </CardContent>
             </Card>
@@ -150,7 +155,7 @@ export function QuizClient({ quiz, dafRef, error }: QuizClientProps) {
         )}
 
         {quizState === 'completed' && (
-            <QuizResults questions={quiz.questions} userAnswers={selectedAnswers} onReset={handleReset} dafRef={quiz.title.replace('Daily Quiz: ', '')}/>
+            <QuizResults questions={quiz.questions} userAnswers={selectedAnswers} onReset={handleReset} dafRef={dafRef} quizType={quizType}/>
         )}
         </main>
     </>

@@ -75,7 +75,7 @@ export function QuizClient({ quiz, dafRef, quizType, quizHref, error }: QuizClie
   if (error) {
     return (
       <>
-        <Header dafRef={dafRef} streak={streak} quizType={quizType} />
+        <Header dafRef={dafRef} streak={streak} quizType={quizHref} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
             <Alert variant="destructive" className="max-w-2xl">
               <Terminal className="h-4 w-4" />
@@ -90,7 +90,7 @@ export function QuizClient({ quiz, dafRef, quizType, quizHref, error }: QuizClie
   if (!quiz) {
     return (
         <>
-            <Header dafRef={dafRef} streak={streak} quizType={quizType} />
+            <Header dafRef={dafRef} streak={streak} quizType={quizHref} />
             <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
                 <Alert className="max-w-2xl">
                     <Terminal className="h-4 w-4" />
@@ -110,7 +110,7 @@ export function QuizClient({ quiz, dafRef, quizType, quizHref, error }: QuizClie
 
   return (
     <>
-        <Header dafRef={dafRef} quizInProgress={quizInProgress} onReset={handleReset} streak={streak} quizType={quizType} />
+        <Header dafRef={dafRef} quizInProgress={quizInProgress} onReset={handleReset} streak={streak} quizType={quizHref} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
         {quizState === 'not-started' && (
             <Card className="w-full max-w-2xl shadow-lg animate-in fade-in zoom-in-95">

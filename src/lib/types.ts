@@ -18,19 +18,15 @@ export interface QuizData {
 export const QuizTypes = {
   'daf-yomi': {
     name: 'Daf Yomi',
-    disabled: false,
   },
   'daily-rambam': {
     name: 'Daily Rambam',
-    disabled: true,
   },
   'daily-mishnah': {
     name: 'Daily Mishnah',
-    disabled: true,
   },
   '929': { 
     name: '929',
-    disabled: true,
   },
 } as const
 

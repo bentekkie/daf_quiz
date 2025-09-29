@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function Loading() {
   return (
     <div className="flex flex-col min-h-screen">
-      <Header quizInProgress={false} quizType={null}/>
+      <Header dafRefPromise={Promise.resolve({dafRef: ''})} quizInProgress={false} quizType={null}/>
       <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
         <Card className="w-full max-w-2xl">
           <CardHeader className="items-center text-center">

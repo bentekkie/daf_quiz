@@ -1,10 +1,12 @@
+'use server';
 
 import { Footer } from '@/components/layout/footer';
 import { QuizClient } from '@/components/quiz/quiz-client';
-import { QuizTypes, QuizTypeName, QuizTypeHref } from '@/lib/types';
+import { Quiz } from '@/components/quiz/quiz-wrapper';
 import { getTodaysQuiz } from '@/lib/quiz-service';
+import { QuizTypes, QuizTypeName, QuizTypeHref } from '@/lib/types';
 
-export function isKeyOfObject<T extends object>(
+function isKeyOfObject<T extends object>(
   key: string | number | symbol,
   obj: T,
 ): key is keyof T {
@@ -22,23 +24,24 @@ export default async function QuizPage({ params }: { params: Promise<{ quizType:
   try {
     const quizTypeParam = (await params).quizType;
     const { name, href } = resolveQuizInfo(quizTypeParam);
-    const { quiz, dafRef } = await getTodaysQuiz(name);
+    const today = new Date();
+    const data = getTodaysQuiz(name, today).catch((error : Error) => ({dafRef: '', quiz: null, dataError: error}));
+
     return (
       <div className="flex flex-col min-h-screen">
-        <QuizClient quiz={quiz} dafRef={dafRef} error={null} quizType={name} quizHref={href} />
+        <Quiz name={name} href={href} data={data}/>
         <Footer />
       </div>
     );
   } catch (e) {
     console.error(e)
     const quizTypeParam = (await params).quizType;
-    const { name, href } = isKeyOfObject(quizTypeParam, QuizTypes) ? {name: QuizTypes[quizTypeParam].name, href: quizTypeParam} : {name: null, href: null};
+    const {  href } = isKeyOfObject(quizTypeParam, QuizTypes) ? { href: quizTypeParam} : {href: null};
     return (
       <div className="flex flex-col min-h-screen">
-        <QuizClient quiz={null} dafRef={''} error={"Error loading quiz"} quizType={name} quizHref={href} />
+        <QuizClient data={Promise.resolve({quiz: null, dafRef: ''})} error={"Error loading quiz"} quizType={null} quizHref={href} />
         <Footer />
       </div>
     );
   }
-
 }

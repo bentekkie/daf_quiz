@@ -1,9 +1,9 @@
 
 'use client';
 
+import { use } from 'react'
 import { usePathname } from 'next/navigation'
 import { BookOpenCheck, Flame, ChevronDown } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertDialog,
@@ -30,15 +30,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { QuizTypeHref, QuizTypeName, QuizTypes } from "@/lib/types";
 
 type HeaderProps = {
-  dafRef?: string;
+  dafRefPromise: Promise<{dafRef: string, [key: string]: any}>;
   quizInProgress?: boolean;
   onReset?: () => void;
   streak?: number;
   quizType: QuizTypeHref | null;
 };
 
-export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }: HeaderProps) {
+export function Header({ dafRefPromise, quizInProgress, onReset, streak = 0, quizType }: HeaderProps) {
   const router = useRouter();
+  const dafRef = use(dafRefPromise).dafRef;
 
   const sefariaUrl = dafRef
     ? `https://www.sefaria.org/${dafRef.replace(/ /g, "_")}`
@@ -93,7 +94,7 @@ export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }
 
   return (
     <header className="bg-card border-b shadow-sm sticky top-0 z-40">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center gap-4">
         {quizInProgress ? (
           <AlertDialog>
             <AlertDialogTrigger asChild>

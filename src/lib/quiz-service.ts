@@ -41,10 +41,14 @@ async function setCachedQuiz(date: Date, quiz: GenerateDailyQuizOutput, quizType
   }
 }
 
-export async function getTodaysQuiz(quizType: QuizTypeName): Promise<{ dafRef: string; quiz: GenerateDailyQuizOutput }> {
-  noStore();
-  const now = new Date();
-  
+export async function getTodaysQuiz(quizType: QuizTypeName | null, now: Date): Promise<{ dafRef: string; quiz: GenerateDailyQuizOutput | null }> {
+  if (!quizType) {
+    return {
+      dafRef: '',
+      quiz: null,
+    }
+  }
+
   let cachedQuiz = await getCachedQuiz(now, quizType);
 
   const daf = await getTodaysSefariaData(quizType, now);

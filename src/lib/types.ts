@@ -25,6 +25,9 @@ export const QuizTypes = {
   'daily-rambam-three': {
     name: 'Daily Rambam (3 Chapters)'
   },
+  'daily-tanya': {
+    name: 'Tanya Yomi'
+  },
   'daily-mishnah': {
     name: 'Daily Mishnah',
   },

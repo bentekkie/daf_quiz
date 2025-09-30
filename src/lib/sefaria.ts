@@ -7,7 +7,10 @@ export interface SefariaData {
 }
 
 // Helper to flatten nested arrays which can occur in Sefaria's API response
-const flattenText = (arr: any[]): string[] => {
+const flattenText = (arr: any[] | string): string[] => {
+  if (typeof arr === 'string') {
+    return [arr]
+  }
   return arr.reduce((acc, val) => 
     Array.isArray(val) ? acc.concat(flattenText(val)) : acc.concat(val),
     []

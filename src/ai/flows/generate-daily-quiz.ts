@@ -9,14 +9,15 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {Question} from '@/lib/types';
+import {QuizTypes} from '@/lib/types';
 import {z} from 'genkit';
-
+z.enum
+const quiznames= Object.values(QuizTypes).map(({name}) => name)
 const GenerateDailyQuizInputSchema = z.object({
   pageText: z
     .string()
     .describe('The text content of the current page. Each line is prefixed with line number and optionally a side (A or B).'),
-  quizType: z.enum(['Daily Mishnah', 'Daily Rambam', 'Daf Yomi', '929']).describe('The type of quiz being generated.'),
+  quizType: z.enum([quiznames[0], ...quiznames.slice(1)]).describe('The type of quiz being generated.'),
   });
 export type GenerateDailyQuizInput = z.infer<typeof GenerateDailyQuizInputSchema>;
 

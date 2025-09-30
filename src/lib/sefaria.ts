@@ -1,4 +1,4 @@
-import type { QuizTypeName } from "@/lib/types";
+import { YearMonthDayTag, type QuizTypeName, type YearMonthDay } from "@/lib/types";
 
 export interface SefariaData {
   ref: string;
@@ -14,10 +14,10 @@ const flattenText = (arr: any[]): string[] => {
   );
 };
 
-export async function getTodaysSefariaData(quizType: QuizTypeName, date: Date): Promise<SefariaData> {
-  const dateTag = date.toISOString().split('T')[0];
+export async function getTodaysSefariaData(quizType: QuizTypeName, date: YearMonthDay): Promise<SefariaData> {
+  const dateTag = YearMonthDayTag(date)
   try {
-    const calendarRes = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${date.getFullYear()}&month=${date.getMonth() + 1}&day=${date.getDate()}`, {
+    const calendarRes = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${date.year}&month=${date.month}&day=${date.day})}`, {
       next: { revalidate: 86400, tags: ['sefaria-calendar', dateTag] }, // Cache for 24h, but tag with date.
     });
 

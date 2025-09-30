@@ -1,7 +1,6 @@
 
 'use client';
 
-import { use } from 'react'
 import { usePathname } from 'next/navigation'
 import { BookOpenCheck, Flame, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -30,16 +29,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { QuizTypeHref, QuizTypeName, QuizTypes } from "@/lib/types";
 
 type HeaderProps = {
-  dafRefPromise: Promise<{dafRef: string, [key: string]: any}>;
+  dafRef: string;
   quizInProgress?: boolean;
   onReset?: () => void;
   streak?: number;
   quizType: QuizTypeHref | null;
 };
 
-export function Header({ dafRefPromise, quizInProgress, onReset, streak = 0, quizType }: HeaderProps) {
+export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }: HeaderProps) {
   const router = useRouter();
-  const dafRef = use(dafRefPromise).dafRef;
 
   const sefariaUrl = dafRef
     ? `https://www.sefaria.org/${dafRef.replace(/ /g, "_")}`

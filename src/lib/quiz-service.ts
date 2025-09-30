@@ -2,21 +2,21 @@ import 'server-only';
 import { unstable_noStore as noStore } from 'next/cache';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { QuizTypeName } from '@/lib/types';
+import { QuizTypeName, YearMonthDay, YearMonthDayTag } from '@/lib/types';
 import { getTodaysSefariaData } from '@/lib/sefaria';
 import { generateDailyQuiz, GenerateDailyQuizOutput } from '@/ai/flows/generate-daily-quiz';
 
 const CACHE_DIR = () => path.join(process.env.APP_ROOT || process.cwd(), '.cache', 'quizzes');
 
-async function getCacheFilePath(date: Date, quizType: QuizTypeName): Promise<string> {
+async function getCacheFilePath(date: YearMonthDay, quizType: QuizTypeName): Promise<string> {
   // Use a simple YYYY-MM-DD format for the filename.
-  const date_tag = date.toISOString().split('T')[0];
+  const dateTag = YearMonthDayTag(date)
   const type_tag = quizType.replace(/\s+/g, '-').toLowerCase();
-  const fileName = `${type_tag}-${date_tag}.json`;
+  const fileName = `${type_tag}-${dateTag}.json`;
   return path.join(CACHE_DIR(), fileName);
 }
 
-async function getCachedQuiz(date: Date, quizType: QuizTypeName): Promise<GenerateDailyQuizOutput | null> {
+async function getCachedQuiz(date: YearMonthDay, quizType: QuizTypeName): Promise<GenerateDailyQuizOutput | null> {
   try {
     const filePath = await getCacheFilePath(date, quizType);
     const data = await fs.readFile(filePath, 'utf-8');
@@ -30,7 +30,7 @@ async function getCachedQuiz(date: Date, quizType: QuizTypeName): Promise<Genera
   }
 }
 
-async function setCachedQuiz(date: Date, quiz: GenerateDailyQuizOutput, quizType: QuizTypeName): Promise<void> {
+async function setCachedQuiz(date: YearMonthDay, quiz: GenerateDailyQuizOutput, quizType: QuizTypeName): Promise<void> {
   try {
     await fs.mkdir(CACHE_DIR(), { recursive: true });
     const filePath = await getCacheFilePath(date, quizType);
@@ -41,7 +41,7 @@ async function setCachedQuiz(date: Date, quiz: GenerateDailyQuizOutput, quizType
   }
 }
 
-export async function getTodaysQuiz(quizType: QuizTypeName | null, now: Date): Promise<{ dafRef: string; quiz: GenerateDailyQuizOutput | null }> {
+export async function getTodaysQuiz(quizType: QuizTypeName | null, now: YearMonthDay): Promise<{ dafRef: string; quiz: GenerateDailyQuizOutput | null }> {
   noStore()
   if (!quizType) {
     return {

@@ -32,3 +32,19 @@ export const QuizTypes = {
 
 export type QuizTypeName = typeof QuizTypes[keyof typeof QuizTypes]["name"];
 export type QuizTypeHref =  keyof typeof QuizTypes;
+
+
+export type YearMonthDay = {
+  year: number;
+  month: number;
+  day: number;
+}
+
+
+function padnum(n: number): string {
+  return String(n).padStart(2, "0")
+}
+
+export function YearMonthDayTag(date: YearMonthDay): string {
+  return `${date.year}-${padnum(date.month)}-${padnum(date.day)}`
+}

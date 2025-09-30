@@ -1,7 +1,7 @@
 'use client';
 import { unstable_noStore as noStore } from 'next/cache';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import type { QuizData, QuizTypeName, QuizTypeHref } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,13 +13,14 @@ import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { Terminal } from 'lucide-react';
 import { Header } from '../layout/header';
 import { useStreak } from '@/hooks/useStreak';
+import { Skeleton } from '../ui/skeleton';
 
 interface QuizClientProps {
-  data: Promise<{
+  data: {
     quiz: QuizData | null;
     dafRef: string;
     dataError?: Error;
-}>;
+};
   quizType: QuizTypeName | null;
   quizHref: QuizTypeHref | null;
   error: string | null;
@@ -36,7 +37,7 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
   const { streak, updateStreak } = useStreak();
 
 
-  const {quiz, dafRef, dataError} = use(data)
+  const {quiz, dafRef, dataError} = data
 
   const handleStart = () => {
     setQuizState('in-progress');
@@ -85,7 +86,7 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
     console.error(dataError.toString())
     return (
       <>
-        <Header dafRefPromise={data} streak={streak} quizType={quizHref} />
+        <Header dafRef={dafRef} streak={streak} quizType={quizHref} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
             <Alert variant="destructive" className="max-w-2xl">
               <Terminal className="h-4 w-4" />
@@ -99,7 +100,7 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
   if (error) {
     return (
       <>
-        <Header dafRefPromise={data} streak={streak} quizType={quizHref} />
+        <Header dafRef={dafRef} streak={streak} quizType={quizHref} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
             <Alert variant="destructive" className="max-w-2xl">
               <Terminal className="h-4 w-4" />
@@ -114,15 +115,19 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
   if (!quiz) {
     return (
       <>
-        <Header dafRefPromise={data} streak={streak} quizType={quizHref} />
+        <Header dafRef={dafRef} streak={streak} quizType={quizHref} />
         <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
-          <Alert className="max-w-2xl">
-            <Terminal className="h-4 w-4" />
-            <AlertTitle>Quiz Unavailable</AlertTitle>
-            <AlertDescription>
-              The quiz for today could not be loaded. Please try again later.
-            </AlertDescription>
-          </Alert>
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="items-center text-center">
+            <CardTitle>
+                <Skeleton className="h-8 w-40" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Skeleton className="h-5 w-3/4 mx-auto mb-6" />
+            <Skeleton className="h-11 w-32 mx-auto" />
+          </CardContent>
+        </Card>
         </main>
       </>
     )
@@ -134,7 +139,7 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
 
   return (
     <>
-      <Header dafRefPromise={data} quizInProgress={quizInProgress} onReset={handleReset} streak={streak} quizType={quizHref} />
+      <Header dafRef={dafRef} quizInProgress={quizInProgress} onReset={handleReset} streak={streak} quizType={quizHref} />
       <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center">
         {quizState === 'not-started' && (
           <Card className="w-full max-w-2xl shadow-lg animate-in fade-in zoom-in-95">

@@ -32,7 +32,19 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef, quizType 
   }, [questions, userAnswers]);
 
   const getResultMessage = () => {
-    if (scorePercentage === 100) return "Perfect score! You're a Talmud master!";
+    const getMasterTitle = (type: QuizTypeName) => {
+      switch (type) {
+        case 'Daf Yomi': return 'Talmud';
+        case 'Daily Rambam':
+        case 'Daily Rambam (3 Chapters)': return 'Rambam';
+        case 'Daily Mishnah': return 'Mishnah';
+        case 'Tanya Yomi': return 'Tanya';
+        case '929': return 'Tanakh';
+        default: return 'Quiz';
+      }
+    };
+
+    if (scorePercentage === 100) return `Perfect score! You're a ${getMasterTitle(quizType)} master!`;
     if (scorePercentage >= 80) return "Excellent work! You really know your stuff.";
     if (scorePercentage >= 50) return "Good job! You're on your way to mastery.";
     return "Keep studying! Every day is a new opportunity to learn.";

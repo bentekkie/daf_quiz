@@ -21,23 +21,27 @@ function resolveQuizInfo(urlType: string): { name: QuizTypeName, href: QuizTypeH
 
 export default async function QuizPage({ params }: { params: Promise<{ quizType: string }> }) {
   const quizTypeParam = (await params).quizType;
+  let quizInfo: { name: QuizTypeName; href: QuizTypeHref } | null = null;
   try {
-    const { name, href } = resolveQuizInfo(quizTypeParam);
-
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Quiz name={name} href={href} />
-        <Footer />
-      </div>
-    );
+    quizInfo = resolveQuizInfo(quizTypeParam);
   } catch (e) {
-    console.error(e)
-    const { href } = isKeyOfObject(quizTypeParam, QuizTypes) ? { href: quizTypeParam } : { href: null };
+    console.error(e);
+  }
+
+  if (quizInfo) {
     return (
       <div className="flex flex-col min-h-screen">
-        <QuizClient data={{ quiz: null, dafRef: '' }} error={"Error loading quiz"} quizType={null} quizHref={href} />
+        <Quiz name={quizInfo.name} href={quizInfo.href} />
         <Footer />
       </div>
     );
   }
+
+  const href = isKeyOfObject(quizTypeParam, QuizTypes) ? quizTypeParam : null;
+  return (
+    <div className="flex flex-col min-h-screen">
+      <QuizClient data={{ quiz: null, dafRef: '' }} error={"Error loading quiz"} quizType={null} quizHref={href} />
+      <Footer />
+    </div>
+  );
 }

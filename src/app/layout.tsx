@@ -3,7 +3,6 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { GoogleAnalytics } from '@next/third-parties/google'
-import { TabBar } from '@/components/layout/tab-bar';
 
 export const metadata: Metadata = {
   title: 'Daf Quiz',

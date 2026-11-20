@@ -147,7 +147,7 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
               <CardTitle className="text-center text-3xl font-headline">{dafRef}</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="text-muted-foreground mb-6">Test your knowledge of today's {quizType}. Ready to begin?</p>
+              <p className="text-muted-foreground mb-6">Test your knowledge of today&apos;s {quizType}. Ready to begin?</p>
               <Button onClick={handleStart} size="lg">Start Quiz</Button>
             </CardContent>
           </Card>

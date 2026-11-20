@@ -11,7 +11,6 @@
 import {ai} from '@/ai/genkit';
 import {QuizTypes} from '@/lib/types';
 import {z} from 'genkit';
-z.enum
 const quiznames= Object.values(QuizTypes).map(({name}) => name)
 const GenerateDailyQuizInputSchema = z.object({
   pageText: z

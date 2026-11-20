@@ -33,9 +33,10 @@ export function Quiz({ name, href }: {
     quiz: null
   })
   const today = DateTime.local();
+  const todayKey = `${today.year}-${today.month}-${today.day}`;
   useEffect(() => {
     fetchData(href, today.zoneName).then(setData)
-  }, [href, `${today.year}-${today.month}-${today.day}`, today.zoneName])
+  }, [href, todayKey, today.zoneName])
   return (
     <QuizClient data={data} error={null} quizType={name} quizHref={href} />
   );

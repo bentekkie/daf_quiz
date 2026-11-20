@@ -7,7 +7,7 @@ RUN npm install -g pnpm
 # 1. Install dependencies
 FROM base as deps
 # Copy dependency definitions
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile

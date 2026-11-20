@@ -6,12 +6,14 @@ export interface SefariaData {
   title: string;
 }
 
+type NestedText = string | NestedText[];
+
 // Helper to flatten nested arrays which can occur in Sefaria's API response
-const flattenText = (arr: any[] | string): string[] => {
+const flattenText = (arr: NestedText): string[] => {
   if (typeof arr === 'string') {
     return [arr]
   }
-  return arr.reduce((acc, val) => 
+  return arr.reduce<string[]>((acc, val) => 
     Array.isArray(val) ? acc.concat(flattenText(val)) : acc.concat(val),
     []
   );
@@ -30,7 +32,7 @@ export async function getTodaysSefariaData(quizType: QuizTypeName, date: YearMon
     const calendarData = await calendarRes.json();
     
     const calendarItem = calendarData.calendar_items.find(
-      (item: any) => item.title.en === quizType
+      (item: { title: { en: string }; ref?: string }) => item.title.en === quizType
     );
 
     if (!calendarItem || !calendarItem.ref) {

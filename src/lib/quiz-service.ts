@@ -21,8 +21,8 @@ async function getCachedQuiz(date: YearMonthDay, quizType: QuizTypeName): Promis
     const filePath = await getCacheFilePath(date, quizType);
     const data = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(data) as GenerateDailyQuizOutput;
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
       return null; // File not found, which is expected if cache is cold
     }
     console.error('Error reading from quiz cache:', error);
@@ -50,7 +50,7 @@ export async function getTodaysQuiz(quizType: QuizTypeName | null, now: YearMont
     }
   }
 
-  let cachedQuiz = await getCachedQuiz(now, quizType);
+  const cachedQuiz = await getCachedQuiz(now, quizType);
 
   const daf = await getTodaysSefariaData(quizType, now);
 

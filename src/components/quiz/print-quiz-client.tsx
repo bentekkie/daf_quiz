@@ -3,16 +3,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DateTime } from 'luxon';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   ArrowLeft,
   BookOpen,
   Calendar,
   CheckSquare,
   FileText,
+  Languages,
   Printer,
   Terminal,
 } from 'lucide-react';
 import type { QuizData, QuizTypeHref, QuizTypeName } from '@/lib/types';
+import { useLanguage } from '@/components/language-provider';
 import { PrintableQuiz, type PrintViewMode } from './printable-quiz';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,6 +31,7 @@ interface PrintQuizClientProps {
 interface QuizApiResponse {
   name: string;
   dafRef: string;
+  sefariaRef?: string;
   quiz: QuizData | null;
   error?: string;
 }
@@ -42,41 +46,17 @@ interface DateOption {
 
 const FUTURE_DAYS_COUNT = 7;
 
-function buildDateOptions(today: DateTime): DateOption[] {
-  const options: DateOption[] = [];
-  for (let offset = 0; offset <= FUTURE_DAYS_COUNT; offset++) {
-    const dt = today.plus({ days: offset });
-    const iso = dt.toISODate() ?? '';
-    const isShabbat = dt.weekday === 6; // Luxon: 1 = Monday ... 6 = Saturday
-    const shortDate = dt.toFormat('ccc, MMM d');
-    const fullLabel = dt.toLocaleString(DateTime.DATE_FULL);
-
-    let prefix = '';
-    if (offset === 0) {
-      prefix = isShabbat ? 'Today (Shabbat) — ' : 'Today — ';
-    } else if (offset === 1) {
-      prefix = isShabbat ? 'Tomorrow (Shabbat) — ' : 'Tomorrow — ';
-    } else if (isShabbat) {
-      prefix = 'Shabbat — ';
-    }
-
-    options.push({
-      iso,
-      label: `${prefix}${shortDate}`,
-      fullLabel,
-      isShabbat,
-      offsetDays: offset,
-    });
-  }
-  return options;
-}
-
 export function PrintQuizClient({
   name,
   href,
   initialMode = 'both',
   initialDate,
 }: PrintQuizClientProps) {
+  const { language, toggleLanguage } = useLanguage();
+  const tCommon = useTranslations('Common');
+  const tQuizTypes = useTranslations('QuizTypes');
+  const tPrint = useTranslations('Print');
+
   const [data, setData] = useState<QuizApiResponse>({
     name,
     dafRef: '',
@@ -87,7 +67,39 @@ export function PrintQuizClient({
 
   const today = useMemo(() => DateTime.local().startOf('day'), []);
   const zoneName = today.zoneName;
-  const dateOptions = useMemo(() => buildDateOptions(today), [today]);
+
+  const dateOptions = useMemo<DateOption[]>(() => {
+    const options: DateOption[] = [];
+    for (let offset = 0; offset <= FUTURE_DAYS_COUNT; offset++) {
+      const dt = today.plus({ days: offset }).setLocale(language);
+      const iso = dt.toISODate() ?? '';
+      const isShabbat = dt.weekday === 6;
+      const shortDate = dt.toFormat('ccc, MMM d');
+      const fullLabel = dt.toLocaleString(DateTime.DATE_FULL);
+
+      let prefix = '';
+      if (offset === 0) {
+        prefix = isShabbat
+          ? tPrint('todayShabbatPrefix')
+          : tPrint('todayPrefix');
+      } else if (offset === 1) {
+        prefix = isShabbat
+          ? tPrint('tomorrowShabbatPrefix')
+          : tPrint('tomorrowPrefix');
+      } else if (isShabbat) {
+        prefix = tPrint('shabbatPrefix');
+      }
+
+      options.push({
+        iso,
+        label: `${prefix}${shortDate}`,
+        fullLabel,
+        isShabbat,
+        offsetDays: offset,
+      });
+    }
+    return options;
+  }, [language, tPrint, today]);
 
   const [selectedIso, setSelectedIso] = useState<string>(() => {
     if (initialDate && dateOptions.some((opt) => opt.iso === initialDate)) {
@@ -101,12 +113,12 @@ export function PrintQuizClient({
   const upcomingShabbat =
     dateOptions.find((opt) => opt.offsetDays > 0 && opt.isShabbat) ?? null;
 
-  const requestKey = `${href}:${selectedDate.iso}:${zoneName}`;
+  const requestKey = `${href}:${selectedDate.iso}:${zoneName}:${language}`;
   const loading = loadedKey !== requestKey;
 
   useEffect(() => {
     let cancelled = false;
-    const params = new URLSearchParams({ tz: zoneName });
+    const params = new URLSearchParams({ tz: zoneName, lang: language });
     if (selectedDate.offsetDays > 0) {
       params.set('date', selectedDate.iso);
     }
@@ -134,11 +146,13 @@ export function PrintQuizClient({
     return () => {
       cancelled = true;
     };
-  }, [href, name, requestKey, selectedDate.iso, selectedDate.offsetDays, zoneName]);
+  }, [href, language, name, requestKey, selectedDate.iso, selectedDate.offsetDays, zoneName]);
 
   const handlePrint = () => {
     window.print();
   };
+
+  const localizedQuizName = tQuizTypes(href);
 
   return (
     <div className="min-h-screen bg-[#ECEAE4] print:bg-white">
@@ -148,27 +162,42 @@ export function PrintQuizClient({
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/${href}`}>
-                <ArrowLeft className="mr-1.5 h-4 w-4" />
-                Back to Quiz
+                <ArrowLeft className="me-1.5 h-4 w-4 rtl:rotate-180" />
+                {tPrint('backToQuiz')}
               </Link>
             </Button>
             <span className="hidden h-5 w-px bg-border sm:inline-block" />
             <span className="hidden font-judaica text-base font-bold text-[#1B365D] lg:inline">
-              Print {name}
-              {data.dafRef ? ` — ${data.dafRef}` : ''}
+              {data.dafRef
+                ? tPrint('toolbarTitleWithRef', {
+                    quizName: localizedQuizName,
+                    dafRef: data.dafRef,
+                  })
+                : tPrint('toolbarTitle', { quizName: localizedQuizName })}
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Language Toggle */}
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              aria-label={tCommon('switchLanguageAria')}
+              className="inline-flex items-center gap-1.5 rounded-md border border-[#1B365D]/20 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#1B365D] transition-colors hover:bg-[#1B365D]/10 cursor-pointer"
+            >
+              <Languages className="h-3.5 w-3.5 text-[#B8860B]" aria-hidden="true" />
+              <span>{tCommon('languageToggleLabel')}</span>
+            </button>
+
             {/* Date Picker (Today through +7 days, highlighting Shabbat) */}
             <label className="inline-flex items-center gap-1.5 rounded-md border border-[#1B365D]/20 bg-white px-2.5 py-1.5 text-xs font-medium text-[#1B365D]">
               <Calendar className="h-3.5 w-3.5 text-[#B8860B]" aria-hidden="true" />
-              <span className="text-[#475569]">Date:</span>
+              <span className="text-[#475569]">{tPrint('dateLabel')}</span>
               <select
-                aria-label="Select printout date"
+                aria-label={tPrint('selectDateAria')}
                 value={selectedDate.iso}
                 onChange={(e) => setSelectedIso(e.target.value)}
-                className="bg-transparent pr-1 text-xs font-medium text-[#1B365D] focus:outline-none cursor-pointer"
+                className="bg-transparent pe-1 text-xs font-medium text-[#1B365D] focus:outline-none cursor-pointer"
               >
                 {dateOptions.map((opt) => (
                   <option key={opt.iso} value={opt.iso}>
@@ -182,10 +211,10 @@ export function PrintQuizClient({
               <button
                 type="button"
                 onClick={() => setSelectedIso(upcomingShabbat.iso)}
-                title={`Switch printout to ${upcomingShabbat.label}`}
+                title={tPrint('switchToDateTitle', { label: upcomingShabbat.label })}
                 className="inline-flex items-center gap-1 rounded-md border border-[#B8860B] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#1B365D] transition-colors hover:bg-[#B8860B]/10 cursor-pointer"
               >
-                For Shabbat
+                {tPrint('forShabbat')}
               </button>
             )}
 
@@ -205,7 +234,7 @@ export function PrintQuizClient({
                 }`}
               >
                 <BookOpen className="h-3.5 w-3.5" />
-                Quiz &amp; Answers
+                {tPrint('modeBoth')}
               </button>
               <button
                 type="button"
@@ -217,7 +246,7 @@ export function PrintQuizClient({
                 }`}
               >
                 <FileText className="h-3.5 w-3.5" />
-                Quiz Only
+                {tPrint('modeQuiz')}
               </button>
               <button
                 type="button"
@@ -229,7 +258,7 @@ export function PrintQuizClient({
                 }`}
               >
                 <CheckSquare className="h-3.5 w-3.5" />
-                Answer Sheet
+                {tPrint('modeAnswers')}
               </button>
             </div>
 
@@ -239,8 +268,8 @@ export function PrintQuizClient({
               className="bg-[#1B365D] text-white hover:bg-[#142947]"
               size="sm"
             >
-              <Printer className="mr-1.5 h-4 w-4" />
-              Print / Save PDF
+              <Printer className="me-1.5 h-4 w-4" />
+              {tPrint('printSavePdf')}
             </Button>
           </div>
         </div>
@@ -252,7 +281,7 @@ export function PrintQuizClient({
           <div className="mx-auto max-w-2xl">
             <Alert variant="destructive">
               <Terminal className="h-4 w-4" />
-              <AlertTitle>Error loading printable quiz</AlertTitle>
+              <AlertTitle>{tPrint('errorLoading')}</AlertTitle>
               <AlertDescription>{data.error}</AlertDescription>
             </Alert>
           </div>

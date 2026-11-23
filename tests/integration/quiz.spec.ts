@@ -25,7 +25,7 @@ test.describe('Daf Quiz Integration Tests (Stubbed GenAI)', () => {
     await expect(page.getByRole('button', { name: 'Start Quiz' })).toBeVisible();
     await expect(page.getByText('Berakhot 2a').first()).toBeVisible();
     await expect(
-      page.getByRole('link', { name: /Print Quiz & Answer Sheet/i }),
+      page.getByRole('link', { name: 'Print Quiz & Answer Sheet', exact: true }),
     ).toBeVisible();
 
     await waitForFonts(page);
@@ -97,7 +97,7 @@ test.describe('Daf Quiz Integration Tests (Stubbed GenAI)', () => {
     await expect(page.getByRole('button', { name: 'Start Quiz' })).toBeVisible();
 
     // Navigate to the print view
-    await page.getByRole('link', { name: /Print Quiz & Answer Sheet/i }).click();
+    await page.getByRole('link', { name: 'Print Quiz & Answer Sheet', exact: true }).click();
     await expect(page).toHaveURL(/\/daf-yomi\/print$/);
 
     const quizSheet = page.getByTestId('printable-quiz-sheet');
@@ -185,7 +185,7 @@ test.describe('Daf Quiz Integration Tests (Stubbed GenAI)', () => {
     });
 
     // Verify printout titles update for Daily Mishnah and capture printout screenshot
-    await page.getByRole('link', { name: /Print Quiz & Answer Sheet/i }).click();
+    await page.getByRole('link', { name: 'Print Quiz & Answer Sheet', exact: true }).click();
     await expect(page).toHaveURL(/\/daily-mishnah\/print$/);
 
     const quizSheet = page.getByTestId('printable-quiz-sheet');
@@ -231,5 +231,76 @@ test.describe('Daf Quiz Integration Tests (Stubbed GenAI)', () => {
     await expect(quizSheet.getByText('Berakhot 2b', { exact: true })).toBeVisible();
     await expect(quizSheet.getByText(/Shabbat •/i)).toBeVisible();
     await expect(forShabbatButton).toBeHidden();
+  });
+
+  test('language toggle switches site to Hebrew RTL and captures Hebrew screenshots', async ({
+    page,
+  }) => {
+    await page.goto('/daf-yomi');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.getByRole('button', { name: 'Start Quiz' })).toBeVisible();
+
+    // Toggle to Hebrew
+    await page.getByRole('button', { name: /Switch language to Hebrew/i }).click();
+
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'he');
+    await expect(page.getByText('ברכות ב׳ ע״א').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'התחל חידון' })).toBeVisible();
+
+    await waitForFonts(page);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '10-hebrew-quiz-start.png'),
+      fullPage: true,
+    });
+
+    // Start Hebrew quiz and capture question screen
+    await page.getByRole('button', { name: 'התחל חידון' }).click();
+    await expect(page.getByText('שאלה 1 מתוך 5')).toBeVisible();
+    await page.locator('#option-0').click();
+
+    await waitForFonts(page);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '11-hebrew-quiz-question.png'),
+      fullPage: true,
+    });
+
+    // Navigate to Print page and verify Hebrew RTL persists
+    await page.goto('/daf-yomi/print');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+
+    const quizSheet = page.getByTestId('printable-quiz-sheet');
+    const answerSheet = page.getByTestId('printable-answer-sheet');
+    await expect(quizSheet).toHaveAttribute('dir', 'rtl');
+    await expect(quizSheet.getByRole('heading', { name: 'חידון דף יומי' })).toBeVisible();
+    await expect(quizSheet.getByText('ברכות ב׳ ע״א', { exact: true })).toBeVisible();
+
+    // Capture Hebrew Quiz Sheet printout
+    await page.getByRole('button', { name: 'חידון בלבד' }).click();
+    await page.setViewportSize({ width: 816, height: 1056 });
+    await page.emulateMedia({ media: 'print' });
+    await waitForFonts(page);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '12-hebrew-printout-quiz.png'),
+      fullPage: true,
+    });
+
+    // Capture Hebrew Answer Sheet printout
+    await page.emulateMedia({ media: 'screen' });
+    await page.getByRole('button', { name: 'דף תשובות' }).click();
+    await expect(answerSheet).toHaveAttribute('dir', 'rtl');
+    await page.emulateMedia({ media: 'print' });
+    await waitForFonts(page);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '13-hebrew-printout-answers.png'),
+      fullPage: true,
+    });
+
+    // Toggle back to English and verify LTR is restored
+    await page.emulateMedia({ media: 'screen' });
+    await page.getByRole('button', { name: /החלפת שפה לאנגלית/i }).click();
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
 });

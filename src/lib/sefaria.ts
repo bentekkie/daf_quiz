@@ -1,7 +1,9 @@
 import { YearMonthDayTag, type QuizTypeName, type YearMonthDay } from "@/lib/types";
+import type { Language } from "@/lib/i18n";
 
 export interface SefariaData {
   ref: string;
+  sefariaRef: string;
   text: string;
   title: string;
 }
@@ -19,7 +21,11 @@ const flattenText = (arr: NestedText): string[] => {
   );
 };
 
-export async function getTodaysSefariaData(quizType: QuizTypeName, date: YearMonthDay): Promise<SefariaData> {
+export async function getTodaysSefariaData(
+  quizType: QuizTypeName,
+  date: YearMonthDay,
+  lang: Language = 'en',
+): Promise<SefariaData> {
   const dateTag = YearMonthDayTag(date)
   try {
     const calendarRes = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${date.year}&month=${date.month}&day=${date.day}`, {
@@ -32,17 +38,20 @@ export async function getTodaysSefariaData(quizType: QuizTypeName, date: YearMon
     const calendarData = await calendarRes.json();
     
     const calendarItem = calendarData.calendar_items.find(
-      (item: { title: { en: string }; ref?: string }) => item.title.en === quizType
+      (item: { title: { en: string }; ref?: string; displayValue?: { en?: string; he?: string } }) => item.title.en === quizType
     );
 
     if (!calendarItem || !calendarItem.ref) {
       throw new Error(`${quizType} not found in Sefaria calendar for today.`);
     }
 
-    const itemRef = calendarItem.ref;
+    const itemRef: string = calendarItem.ref;
+    const displayRef: string =
+      lang === 'he' ? (calendarItem.displayValue?.he || itemRef) : itemRef;
+    const versionParam = lang === 'he' ? 'hebrew' : 'english';
 
     // Fetch the text of the item. commentary=0 removes commentaries, context=1 ensures we get the full page.
-    const textRes = await fetch(`https://www.sefaria.org/api/v3/texts/${itemRef}?commentary=0&context=1&version=english`, {
+    const textRes = await fetch(`https://www.sefaria.org/api/v3/texts/${itemRef}?commentary=0&context=1&version=${versionParam}`, {
       next: { revalidate: 86400 }, // Cache text for 24 hours
     });
 
@@ -52,7 +61,6 @@ export async function getTodaysSefariaData(quizType: QuizTypeName, date: YearMon
 
     const textData = await textRes.json();
     
-    // The English text is in the 'en' property and can be a string or a nested array of strings.
     let text = ''
     switch(quizType){
     case "Daf Yomi":
@@ -68,7 +76,7 @@ export async function getTodaysSefariaData(quizType: QuizTypeName, date: YearMon
       throw new Error(`Text for ${itemRef} is empty or not available.`);
     }
 
-    return { ref: itemRef, text: text, title: calendarItem.title.en };
+    return { ref: displayRef, sefariaRef: itemRef, text: text, title: calendarItem.title.en };
   } catch (error) {
     console.error(`Error fetching today's ${quizType}:`, error);
     // Re-throw a more user-friendly error for the UI to catch

@@ -1,4 +1,5 @@
 import { getTodaysQuiz } from '@/lib/quiz-service'
+import { isLanguage } from '@/lib/i18n'
 import { QuizTypeHref, QuizTypeName, QuizTypes, YearMonthDay } from '@/lib/types';
 import type { NextRequest } from 'next/server'
 import { DateTime } from 'luxon';
@@ -67,8 +68,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const { quizType } = await params
         const info = resolveQuizInfo(quizType)
         const { date, isFutureDate } = getDate(request)
-        const quiz = await getTodaysQuiz(info.name, date, { isFutureDate })
-        return Response.json({ name: info.name, dafRef: quiz.dafRef, quiz: quiz.quiz })
+        const langParam = request.nextUrl.searchParams.get("lang")
+        const lang = isLanguage(langParam) ? langParam : 'en'
+        const quiz = await getTodaysQuiz(info.name, date, { isFutureDate, lang })
+        return Response.json({
+            name: info.name,
+            dafRef: quiz.dafRef,
+            sefariaRef: quiz.sefariaRef,
+            quiz: quiz.quiz,
+        })
     }
     catch (e) {
         return Response.json({error: (e as Error).toString()}, {status: 500})

@@ -1,6 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { QuizData, QuizTypeName } from '@/lib/types';
+import {
+  HEBREW_QUIZ_DISPLAY_TITLES,
+  OPTION_LETTERS,
+  QUIZ_NAME_TO_HREF,
+} from '@/lib/i18n';
+import { useLanguage } from '@/components/language-provider';
 import { Check } from 'lucide-react';
 
 export type PrintViewMode = 'both' | 'quiz' | 'answers';
@@ -14,17 +21,7 @@ interface PrintableQuizProps {
   isShabbat?: boolean;
 }
 
-const HEBREW_QUIZ_TITLES: Record<QuizTypeName, string> = {
-  'Daf Yomi': 'דַּף יוֹמִי',
-  'Daily Rambam': 'רַמְבַּ״ם יוֹמִי',
-  'Daily Rambam (3 Chapters)': 'רַמְבַּ״ם יוֹמִי • ג׳ פְּרָקִים',
-  'Tanya Yomi': 'תַּנְיָא יוֹמִי',
-  'Daily Mishnah': 'מִשְׁנָה יוֹמִית',
-  '929': 'תַּנַ״ךְ יוֹמִי • 929',
-};
-
 const HEBREW_LETTERS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳'];
-const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 function CornerFiligree({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
   const transforms: Record<'tl' | 'tr' | 'bl' | 'br', string> = {
@@ -164,14 +161,17 @@ function ManuscriptFrame({
   children,
   pageBreak = false,
   testId,
+  dir,
 }: {
   children: React.ReactNode;
   pageBreak?: boolean;
   testId: string;
+  dir: 'ltr' | 'rtl';
 }) {
   return (
     <section
       data-testid={testId}
+      dir={dir}
       className={`print-sheet judaica-paper relative mx-auto w-full max-w-[8.5in] rounded-sm border-2 border-[#1B365D] bg-white p-2.5 text-[#162338] shadow-xl ${
         pageBreak ? 'print-page-break mt-8 print:mt-0' : ''
       }`}
@@ -208,21 +208,37 @@ export function PrintableQuiz({
   dateLabel,
   isShabbat = false,
 }: PrintableQuizProps) {
-  const hebrewTitle = HEBREW_QUIZ_TITLES[quizType] ?? 'חִידוֹן יוֹמִי';
+  const { language, isRtl } = useLanguage();
+  const tPrint = useTranslations('Print');
+  const tQuizTypes = useTranslations('QuizTypes');
+
+  const hebrewTitle = HEBREW_QUIZ_DISPLAY_TITLES[quizType] ?? 'חִידוֹן יוֹמִי';
+  const localizedQuizName = tQuizTypes(QUIZ_NAME_TO_HREF[quizType]);
+  const optionLetters = OPTION_LETTERS[language];
+  const dir = isRtl ? 'rtl' : 'ltr';
+
   const showQuiz = mode === 'quiz' || mode === 'both';
   const showAnswers = mode === 'answers' || mode === 'both';
 
   const formatReferenceLocation = (side: 'A' | 'B' | undefined, line: number) => {
+    const lineText = tPrint('lineLabel', { line });
     if (side) {
-      return `${dafRef} • Side ${side}, Line ${line}`;
+      const sideText = side === 'A' ? tPrint('sideA') : tPrint('sideB');
+      return `${dafRef} • ${sideText}, ${lineText}`;
     }
-    return `${dafRef} • Line ${line}`;
+    return `${dafRef} • ${lineText}`;
   };
+
+  const formattedDateLine = dateLabel
+    ? isShabbat
+      ? tPrint('shabbatDatePrefix', { date: dateLabel })
+      : dateLabel
+    : '';
 
   return (
     <div className="space-y-8 print:space-y-0">
       {showQuiz && (
-        <ManuscriptFrame testId="printable-quiz-sheet">
+        <ManuscriptFrame testId="printable-quiz-sheet" dir={dir}>
           {/* Header */}
           <header className="text-center">
             <HeaderFlourish />
@@ -235,7 +251,7 @@ export function PrintableQuiz({
             </p>
 
             <h1 className="font-judaica mt-0.5 text-3xl font-bold tracking-tight text-[#1B365D]">
-              {quizType} Quiz
+              {tPrint('quizHeading', { quizName: localizedQuizName })}
             </h1>
 
             {/* Passage / Daf Reference Banner (white background for ink-friendly printing) */}
@@ -247,9 +263,13 @@ export function PrintableQuiz({
               <span className="text-[#B8860B]">✦</span>
             </div>
 
-            {dateLabel && (
-              <p className="mt-1.5 text-xs uppercase tracking-[0.2em] text-[#475569]">
-                {isShabbat ? `Shabbat • ${dateLabel}` : dateLabel}
+            {formattedDateLine && (
+              <p
+                className={`mt-1.5 text-xs text-[#475569] ${
+                  isRtl ? '' : 'uppercase tracking-[0.15em]'
+                }`}
+              >
+                {formattedDateLine}
               </p>
             )}
           </header>
@@ -259,24 +279,30 @@ export function PrintableQuiz({
           {/* Name / Date / Score Bar */}
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4 rounded border border-[#B8860B]/70 bg-white px-4 py-2.5 text-sm text-[#1B365D]">
             <div className="flex flex-1 min-w-[180px] items-baseline gap-2">
-              <span className="font-judaica font-semibold">Name:</span>
+              <span className="font-judaica font-semibold">{tPrint('nameField')}</span>
               <span className="flex-1 border-b border-dotted border-[#1B365D]/60 pb-0.5" />
             </div>
             <div className="flex w-40 items-baseline gap-2">
-              <span className="font-judaica font-semibold">Date:</span>
+              <span className="font-judaica font-semibold">{tPrint('dateField')}</span>
               <span className="flex-1 border-b border-dotted border-[#1B365D]/60 pb-0.5" />
             </div>
             <div className="flex items-center gap-1.5 rounded border border-[#B8860B] bg-white px-2.5 py-0.5 font-judaica font-semibold">
-              <span>Score:</span>
-              <span className="inline-block w-7 border-b border-[#1B365D]/60 text-center">
-                &nbsp;
+              <span>{tPrint('scoreField')}</span>
+              <span dir="ltr" className="inline-flex items-center gap-1">
+                <span className="inline-block w-7 border-b border-[#1B365D]/60 text-center">
+                  &nbsp;
+                </span>
+                <span>/ {quiz.questions.length}</span>
               </span>
-              <span>/ {quiz.questions.length}</span>
             </div>
           </div>
 
-          <p className="mb-4 text-center font-judaica-serif text-sm italic text-[#475569]">
-            Circle the letter of the best answer for each question below.
+          <p
+            className={`mb-4 text-center font-judaica-serif text-sm text-[#475569] ${
+              isRtl ? '' : 'italic'
+            }`}
+          >
+            {tPrint('instructions')}
           </p>
 
           {/* Questions List */}
@@ -286,7 +312,7 @@ export function PrintableQuiz({
               return (
                 <li
                   key={question.questionNumber}
-                  className="print-avoid-break rounded-md border border-[#1B365D]/25 bg-white px-4 py-3"
+                  className="print-avoid-break rounded-md border border-[#1B365D]/25 bg-white px-4 py-3 text-start"
                 >
                   <div className="flex items-start gap-3">
                     {/* Crisp Outlined Number Medallion (ink-friendly) */}
@@ -314,7 +340,7 @@ export function PrintableQuiz({
                             className="flex items-start gap-2 text-[13px] leading-snug text-[#1E293B]"
                           >
                             <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#1B365D] bg-white font-judaica text-[11px] font-bold text-[#1B365D]">
-                              {OPTION_LETTERS[optIndex] ?? optIndex + 1}
+                              {optionLetters[optIndex] ?? optIndex + 1}
                             </span>
                             <span className="flex-1">{option}</span>
                           </div>
@@ -336,11 +362,22 @@ export function PrintableQuiz({
             >
               הֲפֹךְ בָּהּ וַהֲפֹךְ בָּהּ דְּכֹלָּא בָהּ
             </p>
-            <p className="font-judaica-serif text-xs italic text-[#475569]">
-              &ldquo;Turn it and turn it again, for everything is in it.&rdquo; — Pirkei Avot 5:22
-            </p>
-            <p className="mt-1.5 text-[10px] uppercase tracking-[0.2em] text-[#64748B]">
-              {quizType} • Daf Quiz • Powered by Sefaria
+            {!isRtl && (
+              <p className="font-judaica-serif text-xs italic text-[#475569]">
+                &ldquo;Turn it and turn it again, for everything is in it.&rdquo; — Pirkei Avot 5:22
+              </p>
+            )}
+            {isRtl && (
+              <p className="font-judaica text-xs text-[#475569]">
+                פרקי אבות ה׳, כ״ב
+              </p>
+            )}
+            <p
+              className={`mt-1.5 text-[10px] text-[#64748B] ${
+                isRtl ? '' : 'uppercase tracking-[0.15em]'
+              }`}
+            >
+              {tPrint('footerQuiz', { quizName: localizedQuizName })}
             </p>
           </footer>
         </ManuscriptFrame>
@@ -350,27 +387,36 @@ export function PrintableQuiz({
         <ManuscriptFrame
           pageBreak={showQuiz}
           testId="printable-answer-sheet"
+          dir={dir}
         >
           {/* Header */}
           <header className="text-center">
             <HeaderFlourish />
 
             {/* Crisp Outlined Answer Sheet Ribbon (ink-friendly) */}
-            <div className="mt-1.5 inline-flex items-center gap-2 rounded border-2 border-[#1B365D] bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#1B365D]">
+            <div className="mt-1.5 inline-flex items-center gap-2 rounded border-2 border-[#1B365D] bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[#1B365D]">
               <span dir="rtl" className="font-judaica text-sm tracking-normal text-[#B8860B]">
                 מַפְתֵּחַ תְּשׁוּבוֹת
               </span>
-              <span className="text-[#B8860B]">•</span>
-              <span>Answer Sheet</span>
+              {!isRtl && (
+                <>
+                  <span className="text-[#B8860B]">•</span>
+                  <span>{tPrint('answerSheetBadge')}</span>
+                </>
+              )}
             </div>
 
             <h2 className="font-judaica mt-2 text-2xl font-bold tracking-tight text-[#1B365D]">
-              {quizType} — {dafRef}
+              {localizedQuizName} — {dafRef}
             </h2>
 
-            {dateLabel && (
-              <p className="mt-0.5 text-xs uppercase tracking-[0.2em] text-[#475569]">
-                {isShabbat ? `Shabbat • ${dateLabel}` : dateLabel}
+            {formattedDateLine && (
+              <p
+                className={`mt-0.5 text-xs text-[#475569] ${
+                  isRtl ? '' : 'uppercase tracking-[0.15em]'
+                }`}
+              >
+                {formattedDateLine}
               </p>
             )}
           </header>
@@ -382,13 +428,17 @@ export function PrintableQuiz({
             data-testid="quick-answer-key"
             className="mb-5 rounded-md border border-[#B8860B] bg-white px-4 py-2.5"
           >
-            <p className="mb-2 text-center font-judaica text-xs font-bold uppercase tracking-[0.2em] text-[#1B365D]">
-              Quick-Check Key
+            <p
+              className={`mb-2 text-center font-judaica text-xs font-bold text-[#1B365D] ${
+                isRtl ? '' : 'uppercase tracking-[0.15em]'
+              }`}
+            >
+              {tPrint('quickKeyTitle')}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2.5">
               {quiz.questions.map((question, qIndex) => {
                 const letter =
-                  OPTION_LETTERS[question.correctAnswerIndex] ??
+                  optionLetters[question.correctAnswerIndex] ??
                   String(question.correctAnswerIndex + 1);
                 return (
                   <div
@@ -396,7 +446,7 @@ export function PrintableQuiz({
                     className="flex items-center gap-1.5 rounded border border-[#1B365D]/30 bg-white px-3 py-1 text-sm"
                   >
                     <span className="font-judaica font-semibold text-[#475569]">
-                      Q{qIndex + 1}:
+                      {tPrint('quickKeyItem', { number: qIndex + 1 })}
                     </span>
                     <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#1B365D] bg-white font-judaica text-xs font-bold text-[#1B365D]">
                       {letter}
@@ -412,13 +462,13 @@ export function PrintableQuiz({
             {quiz.questions.map((question, qIndex) => {
               const hebrewNum = HEBREW_LETTERS[qIndex] ?? `${qIndex + 1}`;
               const correctLetter =
-                OPTION_LETTERS[question.correctAnswerIndex] ??
+                optionLetters[question.correctAnswerIndex] ??
                 String(question.correctAnswerIndex + 1);
 
               return (
                 <li
                   key={question.questionNumber}
-                  className="print-avoid-break rounded-md border border-[#1B365D]/25 bg-white px-4 py-3"
+                  className="print-avoid-break rounded-md border border-[#1B365D]/25 bg-white px-4 py-3 text-start"
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex h-7 w-7 shrink-0 flex-col items-center justify-center rounded-full border border-[#B8860B] bg-white text-[#1B365D]">
@@ -438,14 +488,14 @@ export function PrintableQuiz({
                         {question.questionText}
                       </p>
 
-                      {/* Correct Answer Highlight (crisp left gold bar on white) */}
-                      <div className="flex items-start gap-2 rounded border border-[#1B365D]/20 border-l-4 border-l-[#B8860B] bg-white px-2.5 py-1.5 text-[13px] text-[#1B365D]">
+                      {/* Correct Answer Highlight (crisp start gold bar on white) */}
+                      <div className="flex items-start gap-2 rounded border border-[#1B365D]/20 border-s-4 border-s-[#B8860B] bg-white px-2.5 py-1.5 text-[13px] text-[#1B365D]">
                         <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[#1B365D] bg-white text-[#1B365D]">
                           <Check className="h-3 w-3" strokeWidth={3} />
                         </span>
                         <div>
                           <span className="font-bold">
-                            Answer ({correctLetter}):{' '}
+                            {tPrint('answerPrefix', { letter: correctLetter })}{' '}
                           </span>
                           <span className="font-medium">
                             {question.correctAnswer}
@@ -454,11 +504,18 @@ export function PrintableQuiz({
                       </div>
 
                       {/* Source Reference */}
-                      <blockquote className="border-l-2 border-[#B8860B] pl-3 text-xs text-[#475569]">
+                      <blockquote className="border-s-2 border-[#B8860B] ps-3 text-xs text-[#475569]">
                         <span className="font-semibold not-italic text-[#1B365D]">
-                          Source ({formatReferenceLocation(question.reference.side, question.reference.line)}):
+                          {tPrint('sourcePrefix', {
+                            location: formatReferenceLocation(
+                              question.reference.side,
+                              question.reference.line,
+                            ),
+                          })}
                         </span>{' '}
-                        <span className="font-judaica-serif italic">
+                        <span
+                          className={`font-judaica-serif ${isRtl ? '' : 'italic'}`}
+                        >
                           &ldquo;{question.reference.text}&rdquo;
                         </span>
                       </blockquote>
@@ -478,11 +535,22 @@ export function PrintableQuiz({
             >
               כָּל הַשּׁוֹנֶה הֲלָכוֹת בְּכָל יוֹם מֻבְטָח לוֹ שֶׁהוּא בֶּן הָעוֹלָם הַבָּא
             </p>
-            <p className="font-judaica-serif text-xs italic text-[#475569]">
-              &ldquo;Whoever studies Torah laws every day is assured a share in the World to Come.&rdquo; — Megillah 28b
-            </p>
-            <p className="mt-1.5 text-[10px] uppercase tracking-[0.2em] text-[#64748B]">
-              {quizType} Answer Key • Daf Quiz • Source Text via Sefaria.org
+            {!isRtl && (
+              <p className="font-judaica-serif text-xs italic text-[#475569]">
+                &ldquo;Whoever studies Torah laws every day is assured a share in the World to Come.&rdquo; — Megillah 28b
+              </p>
+            )}
+            {isRtl && (
+              <p className="font-judaica text-xs text-[#475569]">
+                מגילה כ״ח ע״ב
+              </p>
+            )}
+            <p
+              className={`mt-1.5 text-[10px] text-[#64748B] ${
+                isRtl ? '' : 'uppercase tracking-[0.15em]'
+              }`}
+            >
+              {tPrint('footerAnswers', { quizName: localizedQuizName })}
             </p>
           </footer>
         </ManuscriptFrame>

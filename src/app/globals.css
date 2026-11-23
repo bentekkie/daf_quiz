@@ -153,7 +153,7 @@ html[dir="rtl"] .font-headline {
 
 @page {
   size: letter portrait;
-  margin: 0.4in;
+  margin: 0.3in;
 }
 
 @media print {
@@ -177,6 +177,8 @@ html[dir="rtl"] .font-headline {
     width: 100% !important;
     max-width: 100% !important;
     border-radius: 0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .print-page-break {

@@ -136,7 +136,15 @@
 }
 
 .font-judaica-serif {
-  font-family: "Cormorant Garamond", "Literata", Georgia, serif;
+  font-family: "Cormorant Garamond", "Frank Ruhl Libre", "Literata", Georgia, serif;
+}
+
+html[dir="rtl"] body {
+  font-family: "Heebo", "Frank Ruhl Libre", sans-serif;
+}
+
+html[dir="rtl"] .font-headline {
+  font-family: "Frank Ruhl Libre", "Heebo", serif;
 }
 
 .judaica-paper {

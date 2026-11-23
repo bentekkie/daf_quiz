@@ -2,7 +2,9 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import type { Question, QuizTypeHref, QuizTypeName } from '@/lib/types';
+import { QUIZ_NAME_TO_HREF } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -14,11 +16,28 @@ interface QuizResultsProps {
   userAnswers: Record<number, number>;
   onReset: () => void;
   dafRef: string;
+  sefariaRef?: string;
   quizType: QuizTypeName;
   quizHref?: QuizTypeHref | null;
 }
 
-export function QuizResults({ questions, userAnswers, onReset, dafRef, quizType, quizHref }: QuizResultsProps) {
+export function QuizResults({
+  questions,
+  userAnswers,
+  onReset,
+  dafRef,
+  sefariaRef,
+  quizType,
+  quizHref,
+}: QuizResultsProps) {
+  const tResults = useTranslations('Results');
+  const tQuiz = useTranslations('Quiz');
+  const tQuizTypes = useTranslations('QuizTypes');
+  const tMaster = useTranslations('MasterTitles');
+
+  const resolvedHref = quizHref ?? QUIZ_NAME_TO_HREF[quizType];
+  const localizedQuizName = tQuizTypes(resolvedHref);
+
   const { scorePercentage, correctAnswersCount } = useMemo(() => {
     let correct = 0;
     questions.forEach((q, index) => {
@@ -34,74 +53,107 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef, quizType,
   }, [questions, userAnswers]);
 
   const getResultMessage = () => {
-    const getMasterTitle = (type: QuizTypeName) => {
-      switch (type) {
-        case 'Daf Yomi': return 'Talmud';
-        case 'Daily Rambam':
-        case 'Daily Rambam (3 Chapters)': return 'Rambam';
-        case 'Daily Mishnah': return 'Mishnah';
-        case 'Tanya Yomi': return 'Tanya';
-        case '929': return 'Tanakh';
-        default: return 'Quiz';
-      }
-    };
-
-    if (scorePercentage === 100) return `Perfect score! You're a ${getMasterTitle(quizType)} master!`;
-    if (scorePercentage >= 80) return "Excellent work! You really know your stuff.";
-    if (scorePercentage >= 50) return "Good job! You're on your way to mastery.";
-    return "Keep studying! Every day is a new opportunity to learn.";
+    if (scorePercentage === 100) {
+      return tResults('perfectScore', { masterTitle: tMaster(resolvedHref) });
+    }
+    if (scorePercentage >= 80) return tResults('excellentScore');
+    if (scorePercentage >= 50) return tResults('goodScore');
+    return tResults('keepStudying');
   };
 
-  const getSefariaUrl = (dafRef: string, side: string | undefined, line: number) => {
-    if (!side) return `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}.${line}`;;
-    return `https://www.sefaria.org/${dafRef.replace(/ /g, '_')}${side}.${line}`;
-  }
+  const refForUrl = sefariaRef || dafRef;
+  const getSefariaUrl = (ref: string, side: string | undefined, line: number) => {
+    if (!side) return `https://www.sefaria.org/${ref.replace(/ /g, '_')}.${line}`;
+    return `https://www.sefaria.org/${ref.replace(/ /g, '_')}${side}.${line}`;
+  };
 
   return (
     <Card className="w-full max-w-2xl shadow-lg animate-in fade-in zoom-in-95">
       <CardHeader className="items-center text-center">
         <Award className="h-16 w-16 text-accent" />
-        <CardTitle className="text-3xl font-headline mt-4">Quiz Completed!</CardTitle>
+        <CardTitle className="text-3xl font-headline mt-4">
+          {tResults('quizCompleted')}
+        </CardTitle>
         <CardDescription className="text-lg">{getResultMessage()}</CardDescription>
         <p className="text-5xl font-bold text-primary pt-4">{scorePercentage}%</p>
-        <p className="text-muted-foreground">You answered {correctAnswersCount} out of {questions.length} questions correctly.</p>
+        <p className="text-muted-foreground">
+          {tResults('answeredCount', {
+            correct: correctAnswersCount,
+            total: questions.length,
+          })}
+        </p>
       </CardHeader>
       <CardContent>
         <div className="my-6">
-            <h3 className="text-lg font-semibold mb-3 text-center">Review Your Answers</h3>
-            <Accordion type="single" collapsible className="w-full">
+          <h3 className="text-lg font-semibold mb-3 text-center">
+            {tResults('reviewYourAnswers')}
+          </h3>
+          <Accordion type="single" collapsible className="w-full">
             {questions.map((q, index) => {
-                const userAnswerIndex = userAnswers[index];
-                const isCorrect = userAnswerIndex === q.correctAnswerIndex;
-                return (
+              const userAnswerIndex = userAnswers[index];
+              const isCorrect = userAnswerIndex === q.correctAnswerIndex;
+              return (
                 <AccordionItem value={`item-${index}`} key={index}>
-                    <AccordionTrigger>
-                        <div className="flex items-center gap-2 text-left">
-                        {isCorrect ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" /> : <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />}
-                        <span className="font-semibold">Question {index + 1}</span>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-3 pt-2">
-                        <p className="font-semibold">{q.questionText}</p>
-                        <p>Your answer: <span className={!isCorrect ? 'text-destructive font-medium' : 'text-green-600'}>{q.options[userAnswerIndex] ?? 'Not answered'}</span></p>
-                        {!isCorrect && <p>Correct answer: <span className="font-medium text-green-600">{q.correctAnswer}</span></p>}
-                        <p className="text-sm text-muted-foreground">Reference: <a href={getSefariaUrl(dafRef, q.reference.side?.toLowerCase(), q.reference.line)} target="_blank" rel="noopener noreferrer" className="underline">{q.reference.text}</a></p>
-                    </AccordionContent>
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-2 text-start">
+                      {isCorrect ? (
+                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+                      )}
+                      <span className="font-semibold">
+                        {tResults('questionNumber', { number: index + 1 })}
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-3 pt-2 text-start">
+                    <p className="font-semibold">{q.questionText}</p>
+                    <p>
+                      {tResults('yourAnswer')}{' '}
+                      <span className={!isCorrect ? 'text-destructive font-medium' : 'text-green-600'}>
+                        {q.options[userAnswerIndex] ?? tResults('notAnswered')}
+                      </span>
+                    </p>
+                    {!isCorrect && (
+                      <p>
+                        {tResults('correctAnswer')}{' '}
+                        <span className="font-medium text-green-600">{q.correctAnswer}</span>
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      {tResults('reference')}{' '}
+                      <a
+                        href={getSefariaUrl(refForUrl, q.reference.side?.toLowerCase(), q.reference.line)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        {q.reference.text}
+                      </a>
+                    </p>
+                  </AccordionContent>
                 </AccordionItem>
-                );
+              );
             })}
-            </Accordion>
+          </Accordion>
         </div>
       </CardContent>
       <CardFooter className="flex-col gap-4">
-        <ShareButtons scorePercentage={scorePercentage} dafRef={dafRef} quizType={quizType} />
+        <ShareButtons
+          scorePercentage={scorePercentage}
+          dafRef={dafRef}
+          sefariaRef={refForUrl}
+          quizType={localizedQuizName}
+        />
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button onClick={onReset} variant="outline">Take Quiz Again</Button>
+          <Button onClick={onReset} variant="outline">
+            {tResults('takeQuizAgain')}
+          </Button>
           {quizHref && (
             <Button variant="outline" asChild>
               <Link href={`/${quizHref}/print`}>
-                <Printer className="mr-2 h-4 w-4" />
-                Print Quiz &amp; Answer Sheet
+                <Printer className="me-2 h-4 w-4" />
+                {tQuiz('printQuizAndAnswers')}
               </Link>
             </Button>
           )}

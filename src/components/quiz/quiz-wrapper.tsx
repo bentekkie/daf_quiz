@@ -1,43 +1,67 @@
 "use client"
 
-import type { QuizTypeName, QuizTypeHref } from '@/lib/types';
+import type { QuizData, QuizTypeName, QuizTypeHref } from '@/lib/types';
+import type { Language } from '@/lib/i18n';
 import { QuizClient } from './quiz-client';
-import type { GenerateDailyQuizOutput } from '@/ai/flows/generate-daily-quiz';
+import { useLanguage } from '@/components/language-provider';
 import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 
 export const experimental_ppr = true
 
+interface QuizResponse {
+  name: string;
+  dafRef: string;
+  sefariaRef?: string;
+  quiz: QuizData | null;
+  error?: string;
+}
 
-
-async function fetchData(href : QuizTypeHref, tz: string): Promise<{
-  name: string,
-  dafRef: string,
-  quiz: GenerateDailyQuizOutput | null
-  error?: string
-}> {
-  return (await fetch(`/api/${href}?tz=${tz}`)).json()
+async function fetchData(
+  href: QuizTypeHref,
+  tz: string,
+  lang: Language,
+): Promise<QuizResponse> {
+  const params = new URLSearchParams({ tz, lang });
+  return (await fetch(`/api/${href}?${params.toString()}`)).json();
 }
 
 export function Quiz({ name, href }: {
   name: QuizTypeName, href: QuizTypeHref
 }) {
-  const [data, setData] = useState<{
-    name: string,
-    dafRef: string,
-    quiz: GenerateDailyQuizOutput | null
-    error?: string
-  }>({
+  const { language } = useLanguage();
+  const [data, setData] = useState<QuizResponse>({
     name,
     dafRef: '',
-    quiz: null
-  })
+    sefariaRef: '',
+    quiz: null,
+  });
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+
   const today = DateTime.local();
   const todayKey = `${today.year}-${today.month}-${today.day}`;
+  const zoneName = today.zoneName;
+  const requestKey = `${href}:${todayKey}:${zoneName}:${language}`;
+
   useEffect(() => {
-    fetchData(href, today.zoneName).then(setData)
-  }, [href, todayKey, today.zoneName])
+    let cancelled = false;
+    fetchData(href, zoneName, language).then((res) => {
+      if (!cancelled) {
+        setData(res);
+        setLoadedKey(requestKey);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [href, language, requestKey, zoneName]);
+
+  const effectiveData =
+    loadedKey === requestKey
+      ? data
+      : { name, dafRef: '', sefariaRef: '', quiz: null };
+
   return (
-    <QuizClient data={data} error={null} quizType={name} quizHref={href} />
+    <QuizClient data={effectiveData} error={null} quizType={name} quizHref={href} />
   );
 }

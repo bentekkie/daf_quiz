@@ -12,6 +12,7 @@ It fetches the daily page from the Sefaria API, uses Google's Gemini model via G
 - **Interactive UI:** A clean and modern interface for taking the quiz, built with ShadCN UI and Tailwind CSS.
 - **Answer Review:** Users can review their answers and see references to the source text on Sefaria.org.
 - **Printable Quiz & Answer Sheets:** Print or save as PDF a printer-friendly formatted quiz sheet and separate answer sheet with source references—including future days up to a week ahead (e.g., printing Shabbat's quiz on Friday).
+- **English & Hebrew (RTL):** Switch seamlessly between English (LTR) and Hebrew (RTL) using the language toggle, with localized UI strings (`next-intl`), Hebrew Sefaria texts, Hebrew AI-generated quizzes, and RTL printouts.
 - **Social Sharing:** Easily share your quiz score on social media.
 
 ## Tech Stack

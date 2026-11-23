@@ -17,7 +17,8 @@ const GenerateDailyQuizInputSchema = z.object({
     .string()
     .describe('The text content of the current page. Each line is prefixed with line number and optionally a side (A or B).'),
   quizType: z.enum([quiznames[0], ...quiznames.slice(1)]).describe('The type of quiz being generated.'),
-  });
+  language: z.enum(['en', 'he']).optional().default('en').describe('Output language for the generated quiz (en = English, he = Hebrew).'),
+});
 export type GenerateDailyQuizInput = z.infer<typeof GenerateDailyQuizInputSchema>;
 
 const ReferenceSchema = z.object({
@@ -51,6 +52,7 @@ const generateDailyQuizPrompt = ai.definePrompt({
   output: {schema: GenerateDailyQuizOutputSchema},
   prompt: `You are an expert in creating quizzes based on religious texts.
   Given the text of the current {{{quizType}}} page, generate a quiz with 5 multiple-choice questions.
+  Output language code: {{{language}}} (if "he", write all questions, options, correctAnswer, and reference.text in clear, natural Hebrew; if "en", write them in English).
   For each question, provide 4 options, the correct answer text, the index of the correct answer, and a reference to the specific passage.
   Ensure the response is a valid JSON object matching the provided schema.
 

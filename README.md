@@ -11,6 +11,7 @@ It fetches the daily page from the Sefaria API, uses Google's Gemini model via G
 - **Server-Side Caching:** The daily quiz is generated once and cached on the server to ensure fast load times for all users.
 - **Interactive UI:** A clean and modern interface for taking the quiz, built with ShadCN UI and Tailwind CSS.
 - **Answer Review:** Users can review their answers and see references to the source text on Sefaria.org.
+- **Printable Quiz & Answer Sheets:** Print or save as PDF a printer-friendly formatted quiz sheet and separate answer sheet with source references—including future days up to a week ahead (e.g., printing Shabbat's quiz on Friday).
 - **Social Sharing:** Easily share your quiz score on social media.
 
 ## Tech Stack
@@ -68,3 +69,19 @@ You can also run the application using Docker and Docker Compose.
     docker-compose up --build
     ```
     The application will be available at [http://localhost:3000](http://localhost:3000). The cache directory is mounted as a volume to persist the daily quiz across container restarts.
+
+## Integration Tests & Screenshots
+
+Playwright integration tests run end-to-end against the app with GenAI stubbed (`STUB_AI=true`, no `GEMINI_API_KEY` required) and capture screenshots of the main screens and printouts into `test-screenshots/`.
+
+1. **Install Playwright's Chromium browser (first time only):**
+   ```bash
+   pnpm exec playwright install chromium
+   ```
+
+2. **Run the integration tests locally:**
+   ```bash
+   pnpm test:e2e
+   ```
+
+These tests also run automatically on every GitHub pull request via `.github/workflows/integration-tests.yml`, uploading the captured screenshots as the `integration-test-screenshots` workflow artifact.

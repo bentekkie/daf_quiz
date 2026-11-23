@@ -1,11 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Question, QuizTypeName } from '@/lib/types';
+import Link from 'next/link';
+import type { Question, QuizTypeHref, QuizTypeName } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Award, CheckCircle, XCircle } from 'lucide-react';
+import { Award, CheckCircle, Printer, XCircle } from 'lucide-react';
 import { ShareButtons } from './share-buttons';
 
 interface QuizResultsProps {
@@ -14,9 +15,10 @@ interface QuizResultsProps {
   onReset: () => void;
   dafRef: string;
   quizType: QuizTypeName;
+  quizHref?: QuizTypeHref | null;
 }
 
-export function QuizResults({ questions, userAnswers, onReset, dafRef, quizType }: QuizResultsProps) {
+export function QuizResults({ questions, userAnswers, onReset, dafRef, quizType, quizHref }: QuizResultsProps) {
   const { scorePercentage, correctAnswersCount } = useMemo(() => {
     let correct = 0;
     questions.forEach((q, index) => {
@@ -93,7 +95,17 @@ export function QuizResults({ questions, userAnswers, onReset, dafRef, quizType 
       </CardContent>
       <CardFooter className="flex-col gap-4">
         <ShareButtons scorePercentage={scorePercentage} dafRef={dafRef} quizType={quizType} />
-        <Button onClick={onReset} variant="outline">Take Quiz Again</Button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button onClick={onReset} variant="outline">Take Quiz Again</Button>
+          {quizHref && (
+            <Button variant="outline" asChild>
+              <Link href={`/${quizHref}/print`}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print Quiz &amp; Answer Sheet
+              </Link>
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

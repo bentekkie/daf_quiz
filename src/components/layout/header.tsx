@@ -1,7 +1,8 @@
 
 'use client';
 
-import { BookOpenCheck, Flame, ChevronDown } from "lucide-react";
+import { BookOpenCheck, Flame, ChevronDown, Printer } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertDialog,
@@ -129,6 +130,24 @@ export function Header({ dafRef, quizInProgress, onReset, streak = 0, quizType }
                 {dafRef}
               </a>
             </div>
+          )}
+          {dafRef && quizType && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={`/${quizType}/print`}
+                    aria-label="Print quiz and answer sheet"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Print quiz &amp; answer sheet</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
           <TooltipProvider>
             <Tooltip>

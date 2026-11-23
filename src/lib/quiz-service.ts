@@ -2,9 +2,9 @@ import 'server-only';
 import { unstable_noStore as noStore } from 'next/cache';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { QuizTypeName, YearMonthDay, YearMonthDayTag } from '@/lib/types';
+import { QuizData, QuizTypeName, YearMonthDay, YearMonthDayTag } from '@/lib/types';
 import { getTodaysSefariaData } from '@/lib/sefaria';
-import { generateDailyQuiz, GenerateDailyQuizOutput } from '@/ai/flows/generate-daily-quiz';
+import { getStubQuizData } from '@/lib/stub-quiz';
 
 const CACHE_DIR = () => path.join(process.env.APP_ROOT || process.cwd(), '.cache', 'quizzes');
 
@@ -16,11 +16,11 @@ async function getCacheFilePath(date: YearMonthDay, quizType: QuizTypeName): Pro
   return path.join(CACHE_DIR(), fileName);
 }
 
-async function getCachedQuiz(date: YearMonthDay, quizType: QuizTypeName): Promise<GenerateDailyQuizOutput | null> {
+async function getCachedQuiz(date: YearMonthDay, quizType: QuizTypeName): Promise<QuizData | null> {
   try {
     const filePath = await getCacheFilePath(date, quizType);
     const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data) as GenerateDailyQuizOutput;
+    return JSON.parse(data) as QuizData;
   } catch (error: unknown) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
       return null; // File not found, which is expected if cache is cold
@@ -30,7 +30,7 @@ async function getCachedQuiz(date: YearMonthDay, quizType: QuizTypeName): Promis
   }
 }
 
-async function setCachedQuiz(date: YearMonthDay, quiz: GenerateDailyQuizOutput, quizType: QuizTypeName): Promise<void> {
+async function setCachedQuiz(date: YearMonthDay, quiz: QuizData, quizType: QuizTypeName): Promise<void> {
   try {
     await fs.mkdir(CACHE_DIR(), { recursive: true });
     const filePath = await getCacheFilePath(date, quizType);
@@ -41,13 +41,21 @@ async function setCachedQuiz(date: YearMonthDay, quiz: GenerateDailyQuizOutput, 
   }
 }
 
-export async function getTodaysQuiz(quizType: QuizTypeName | null, now: YearMonthDay): Promise<{ dafRef: string; quiz: GenerateDailyQuizOutput | null }> {
+export async function getTodaysQuiz(
+  quizType: QuizTypeName | null,
+  now: YearMonthDay,
+  options?: { isFutureDate?: boolean },
+): Promise<{ dafRef: string; quiz: QuizData | null }> {
   noStore()
   if (!quizType) {
     return {
       dafRef: '',
       quiz: null,
     }
+  }
+
+  if (process.env.STUB_AI === 'true') {
+    return getStubQuizData(quizType, options?.isFutureDate);
   }
 
   const cachedQuiz = await getCachedQuiz(now, quizType);
@@ -57,6 +65,8 @@ export async function getTodaysQuiz(quizType: QuizTypeName | null, now: YearMont
   if (cachedQuiz) {
     return { dafRef: daf.ref, quiz: cachedQuiz };
   }
+
+  const { generateDailyQuiz } = await import('@/ai/flows/generate-daily-quiz');
   const newQuiz = await generateDailyQuiz({
     quizType: quizType,
     pageText: daf.text

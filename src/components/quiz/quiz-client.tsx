@@ -1,16 +1,18 @@
 'use client';
 import { unstable_noStore as noStore } from 'next/cache';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { DateTime } from 'luxon';
 import type { QuizData, QuizTypeName, QuizTypeHref } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import Link from 'next/link';
 import { QuizResults } from './quiz-results';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
-import { Terminal } from 'lucide-react';
+import { Calendar, Printer, Terminal } from 'lucide-react';
 import { Header } from '../layout/header';
 import { useStreak } from '@/hooks/useStreak';
 import { Skeleton } from '../ui/skeleton';
@@ -36,6 +38,17 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
   const [currentSelection, setCurrentSelection] = useState<string | null>(null);
   const { streak, updateStreak } = useStreak();
 
+  const upcomingShabbat = useMemo(() => {
+    const today = DateTime.local().startOf('day');
+    // Luxon weekday: 1 = Monday ... 5 = Friday, 6 = Saturday, 7 = Sunday
+    const daysUntilSaturday = today.weekday === 6 ? 7 : (6 - today.weekday + 7) % 7;
+    const shabbatDate = today.plus({ days: daysUntilSaturday });
+    return {
+      iso: shabbatDate.toISODate() ?? '',
+      shortLabel: shabbatDate.toFormat('ccc, MMM d'),
+      isTomorrow: daysUntilSaturday === 1,
+    };
+  }, []);
 
   const {quiz, dafRef, dataError} = data
 
@@ -148,7 +161,38 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-muted-foreground mb-6">Test your knowledge of today&apos;s {quizType}. Ready to begin?</p>
-              <Button onClick={handleStart} size="lg">Start Quiz</Button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button onClick={handleStart} size="lg">Start Quiz</Button>
+                {quizHref && (
+                  <Button variant="outline" size="lg" asChild>
+                    <Link href={`/${quizHref}/print`}>
+                      <Printer className="mr-2 h-4 w-4" />
+                      Print Quiz &amp; Answer Sheet
+                    </Link>
+                  </Button>
+                )}
+              </div>
+              {quizHref && upcomingShabbat.iso && (
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5 shrink-0 text-primary/70" aria-hidden="true" />
+                  <span>
+                    {upcomingShabbat.isTomorrow
+                      ? 'Preparing for Shabbat?'
+                      : 'Printing ahead?'}{' '}
+                    <Link
+                      href={{
+                        pathname: `/${quizHref}/print`,
+                        query: { date: upcomingShabbat.iso },
+                      }}
+                      className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+                    >
+                      {upcomingShabbat.isTomorrow
+                        ? "Print tomorrow's Shabbat quiz"
+                        : `Print for Shabbat (${upcomingShabbat.shortLabel}) or a future day`}
+                    </Link>
+                  </span>
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
@@ -185,7 +229,7 @@ export function QuizClient({ data, quizType, quizHref, error }: QuizClientProps)
         )}
 
         {quizState === 'completed' && (
-          <QuizResults questions={quiz.questions} userAnswers={selectedAnswers} onReset={handleReset} dafRef={dafRef} quizType={quizType!} />
+          <QuizResults questions={quiz.questions} userAnswers={selectedAnswers} onReset={handleReset} dafRef={dafRef} quizType={quizType!} quizHref={quizHref} />
         )}
       </main>
     </>

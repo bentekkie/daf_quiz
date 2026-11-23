@@ -20,7 +20,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Literata&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..600&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
           {children}

@@ -16,6 +16,12 @@ async function waitForFonts(page: Page) {
   });
 }
 
+function countPdfPages(pdfBuffer: Buffer): number {
+  const content = pdfBuffer.toString('latin1');
+  const pagesMatches = content.match(/\/Type\s*\/Page\b(?!s)/g);
+  return pagesMatches ? pagesMatches.length : 0;
+}
+
 test.describe('Daf Quiz Integration Tests (Stubbed GenAI)', () => {
   test('full interactive quiz flow and screen screenshots', async ({ page }) => {
     // 1. Visiting "/" redirects to "/daf-yomi" and loads the stubbed quiz
@@ -147,6 +153,12 @@ test.describe('Daf Quiz Integration Tests (Stubbed GenAI)', () => {
       path: path.join(SCREENSHOT_DIR, '06-printout-quiz.png'),
       fullPage: true,
     });
+    const quizPdf = await page.pdf({
+      format: 'Letter',
+      preferCSSPageSize: true,
+      printBackground: true,
+    });
+    expect(countPdfPages(quizPdf)).toBe(1);
 
     // Answer Sheet printout
     await page.emulateMedia({ media: 'screen' });
@@ -161,6 +173,26 @@ test.describe('Daf Quiz Integration Tests (Stubbed GenAI)', () => {
       path: path.join(SCREENSHOT_DIR, '07-printout-answers.png'),
       fullPage: true,
     });
+    const answersPdf = await page.pdf({
+      format: 'Letter',
+      preferCSSPageSize: true,
+      printBackground: true,
+    });
+    expect(countPdfPages(answersPdf)).toBe(1);
+
+    // Both Quiz & Answer Sheet should be exactly 2 Letter pages (1 quiz + 1 answers)
+    await page.emulateMedia({ media: 'screen' });
+    await page.getByRole('button', { name: 'Quiz & Answers' }).click();
+    await expect(quizSheet).toBeVisible();
+    await expect(answerSheet).toBeVisible();
+    await page.emulateMedia({ media: 'print' });
+    await waitForFonts(page);
+    const bothPdf = await page.pdf({
+      format: 'Letter',
+      preferCSSPageSize: true,
+      printBackground: true,
+    });
+    expect(countPdfPages(bothPdf)).toBe(2);
 
     // Reset media
     await page.emulateMedia({ media: 'screen' });
@@ -302,5 +334,65 @@ test.describe('Daf Quiz Integration Tests (Stubbed GenAI)', () => {
     await page.getByRole('button', { name: /החלפת שפה לאנגלית/i }).click();
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
+
+  test('long verbose quiz and answer sheets dynamically scale font to fit 1 Letter page each', async ({
+    page,
+  }) => {
+    const longQuestions = Array.from({ length: 5 }, (_, idx) => ({
+      questionNumber: idx + 1,
+      questionText: `Question ${idx + 1}: According to the detailed discussion in the Gemara regarding the dispute between Rabbi Yehuda and the Rabbis about entering a courtyard and preparing an eruv before Shabbat, what is the exact legal principle derived from the Mishnah?`,
+      options: [
+        'Because the Mishnah explicitly states that any vessel set aside for a forbidden labor may still be moved for the sake of its place or its body during Shabbat',
+        'Because the Sages enacted a Rabbinic decree in order to prevent people from inadvertently carrying items across a public domain boundary on Shabbat',
+        'Because Rabbi Yehuda holds that only items designated specifically before twilight on Friday afternoon retain their permitted status throughout the entire day',
+        'Because the principle of muktzeh applies equally to both utensils used for permitted tasks and those reserved exclusively for crafts prohibited on Shabbat',
+      ],
+      correctAnswer:
+        'Because the Sages enacted a Rabbinic decree in order to prevent people from inadvertently carrying items across a public domain boundary on Shabbat',
+      correctAnswerIndex: 1,
+      reference: {
+        side: 'A' as const,
+        line: idx + 4,
+        text: 'The Gemara explains at length: Why did the Sages establish this boundary in the Mishnah? In order to distance a person from transgression and ensure that no one mistakenly carries from a private domain into a public domain on Shabbat or festival days.',
+      },
+    }));
+
+    await page.route('**/api/daf-yomi*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          name: 'Daf Yomi',
+          dafRef: 'Arakhin 7a',
+          sefariaRef: 'Arakhin 7a',
+          quiz: { questions: longQuestions },
+        }),
+      });
+    });
+
+    await page.goto('/daf-yomi/print');
+    const quizSheet = page.getByTestId('printable-quiz-sheet');
+    const answerSheet = page.getByTestId('printable-answer-sheet');
+    await expect(quizSheet).toBeVisible();
+    await expect(answerSheet).toBeVisible();
+    await waitForFonts(page);
+
+    // Verify dynamic font scaling reduced the base font size below the 15.5px default
+    const quizFontPx = Number(await quizSheet.getAttribute('data-font-px'));
+    const answerFontPx = Number(await answerSheet.getAttribute('data-font-px'));
+    expect(quizFontPx).toBeLessThan(15.5);
+    expect(answerFontPx).toBeLessThan(15.5);
+
+    // Verify real Letter PDF fits on exactly 2 pages (1 quiz + 1 answer sheet)
+    await page.emulateMedia({ media: 'print' });
+    await waitForFonts(page);
+    const pdf = await page.pdf({
+      format: 'Letter',
+      preferCSSPageSize: true,
+      printBackground: true,
+    });
+    expect(countPdfPages(pdf)).toBe(2);
+    await page.emulateMedia({ media: 'screen' });
   });
 });

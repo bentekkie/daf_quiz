@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { QuizData, QuizTypeName } from '@/lib/types';
 import {
@@ -23,19 +24,35 @@ interface PrintableQuizProps {
 
 const HEBREW_LETTERS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳'];
 
+// US Letter is 11in (1056px @ 96dpi). With 0.3in top/bottom @page margins,
+// printable height is 10.4in (998px). Target 950px to leave comfortable safety margin.
+const MAX_LETTER_HEIGHT_PX = 950;
+const MIN_BASE_FONT_PX = 9.5;
+const MAX_BASE_FONT_PX = 15.5;
+
+function estimateInitialFontPx(charCount: number, kind: 'quiz' | 'answers'): number {
+  const threshold = kind === 'quiz' ? 1150 : 1250;
+  if (charCount <= threshold) return MAX_BASE_FONT_PX;
+  // Smoothly reduce base font size for verbose AI-generated content
+  // so mobile print engines (which may not re-run React effects on print) also fit on 1 page.
+  const excess = charCount - threshold;
+  const reduction = (excess / 350) * 0.85;
+  return Math.max(MIN_BASE_FONT_PX, Math.round((MAX_BASE_FONT_PX - reduction) * 2) / 2);
+}
+
 function CornerFiligree({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
   const transforms: Record<'tl' | 'tr' | 'bl' | 'br', string> = {
-    tl: 'top-2.5 left-2.5',
-    tr: 'top-2.5 right-2.5 scale-x-[-1]',
-    bl: 'bottom-2.5 left-2.5 scale-y-[-1]',
-    br: 'bottom-2.5 right-2.5 scale-[-1]',
+    tl: 'top-2 left-2',
+    tr: 'top-2 right-2 scale-x-[-1]',
+    bl: 'bottom-2 left-2 scale-y-[-1]',
+    br: 'bottom-2 right-2 scale-[-1]',
   };
 
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 64 64"
-      className={`pointer-events-none absolute h-12 w-12 ${transforms[position]}`}
+      className={`pointer-events-none absolute h-[2.2em] w-[2.2em] ${transforms[position]}`}
       fill="none"
     >
       {/* Outer L-bracket in Tekhelet */}
@@ -73,7 +90,7 @@ function HeaderFlourish() {
     <svg
       aria-hidden="true"
       viewBox="0 0 220 26"
-      className="mx-auto h-6 w-52"
+      className="mx-auto h-[1.15em] w-[10.5em]"
       fill="none"
     >
       {/* Left ornamental scroll & olive leaf */}
@@ -139,9 +156,9 @@ function HeaderFlourish() {
 
 function OrnamentalDivider() {
   return (
-    <div className="my-3 flex items-center justify-center gap-3" aria-hidden="true">
+    <div className="my-[0.45em] flex items-center justify-center gap-3" aria-hidden="true">
       <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-[#B8860B] to-[#1B365D]/60" />
-      <svg viewBox="0 0 24 14" className="h-3.5 w-6 shrink-0" fill="none">
+      <svg viewBox="0 0 24 14" className="h-[0.75em] w-[1.25em] shrink-0" fill="none">
         <path
           d="M12 1.5L17.5 7L12 12.5L6.5 7L12 1.5Z"
           stroke="#1B365D"
@@ -162,24 +179,80 @@ function ManuscriptFrame({
   pageBreak = false,
   testId,
   dir,
+  initialFontPx,
+  contentKey,
 }: {
   children: React.ReactNode;
   pageBreak?: boolean;
   testId: string;
   dir: 'ltr' | 'rtl';
+  initialFontPx: number;
+  contentKey: string;
 }) {
+  const sheetRef = useRef<HTMLElement | null>(null);
+  const [fontState, setFontState] = useState<{ key: string; px: number }>({
+    key: contentKey,
+    px: initialFontPx,
+  });
+
+  const activeFontPx = fontState.key === contentKey ? fontState.px : initialFontPx;
+
+  useLayoutEffect(() => {
+    const el = sheetRef.current;
+    if (!el) return;
+    // Only auto-shrink based on measured height when laid out at desktop/Letter width
+    // (narrow phone screens wrap much taller than Letter paper).
+    if (el.clientWidth < 640) return;
+
+    const currentHeight = el.getBoundingClientRect().height;
+    if (currentHeight > MAX_LETTER_HEIGHT_PX && activeFontPx > MIN_BASE_FONT_PX) {
+      const ratio = MAX_LETTER_HEIGHT_PX / currentHeight;
+      const estimated = Math.floor(activeFontPx * Math.sqrt(ratio) * 2) / 2;
+      const nextPx = Math.max(
+        MIN_BASE_FONT_PX,
+        Math.min(activeFontPx - 0.5, estimated),
+      );
+      if (nextPx < activeFontPx) {
+        setFontState({ key: contentKey, px: nextPx });
+      }
+    }
+  }, [activeFontPx, contentKey]);
+
+  useEffect(() => {
+    const handleRefit = () => {
+      const el = sheetRef.current;
+      if (!el || el.clientWidth < 640) return;
+      const currentHeight = el.getBoundingClientRect().height;
+      if (currentHeight > MAX_LETTER_HEIGHT_PX && activeFontPx > MIN_BASE_FONT_PX) {
+        const nextPx = Math.max(MIN_BASE_FONT_PX, activeFontPx - 0.5);
+        setFontState({ key: contentKey, px: nextPx });
+      }
+    };
+
+    window.addEventListener('beforeprint', handleRefit);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(handleRefit);
+    }
+    return () => {
+      window.removeEventListener('beforeprint', handleRefit);
+    };
+  }, [activeFontPx, contentKey]);
+
   return (
     <section
+      ref={sheetRef}
       data-testid={testId}
+      data-font-px={activeFontPx}
       dir={dir}
-      className={`print-sheet judaica-paper relative mx-auto w-full max-w-[8.5in] rounded-sm border-2 border-[#1B365D] bg-white p-2.5 text-[#162338] shadow-xl ${
+      style={{ fontSize: `${activeFontPx}px` }}
+      className={`print-sheet judaica-paper relative mx-auto w-full max-w-[8.5in] rounded-sm border-2 border-[#1B365D] bg-white p-[0.45em] text-[#162338] shadow-xl ${
         pageBreak ? 'print-page-break mt-8 print:mt-0' : ''
       }`}
     >
       {/* Inner Gold Manuscript Frame */}
-      <div className="relative border border-[#B8860B] px-7 py-6 sm:px-10 sm:py-8">
+      <div className="relative border border-[#B8860B] px-[1.6em] py-[1em]">
         {/* Hairline inner accent */}
-        <div className="pointer-events-none absolute inset-1.5 border border-[#1B365D]/15" />
+        <div className="pointer-events-none absolute inset-1 border border-[#1B365D]/15" />
 
         <CornerFiligree position="tl" />
         <CornerFiligree position="tr" />
@@ -189,7 +262,7 @@ function ManuscriptFrame({
         {/* Traditional BS"D (B'siyata D'shmaya) */}
         <div
           dir="rtl"
-          className="font-judaica absolute right-11 top-4 text-sm font-bold tracking-wide text-[#1B365D]"
+          className="font-judaica absolute right-[2.2em] top-[0.65em] text-[0.75em] font-bold tracking-wide text-[#1B365D]"
         >
           בס״ד
         </div>
@@ -220,6 +293,42 @@ export function PrintableQuiz({
   const showQuiz = mode === 'quiz' || mode === 'both';
   const showAnswers = mode === 'answers' || mode === 'both';
 
+  const quizCharCount = useMemo(
+    () =>
+      quiz.questions.reduce(
+        (sum, q) =>
+          sum +
+          q.questionText.length +
+          q.options.reduce((optSum, opt) => optSum + opt.length, 0),
+        0,
+      ),
+    [quiz.questions],
+  );
+
+  const answersCharCount = useMemo(
+    () =>
+      quiz.questions.reduce(
+        (sum, q) =>
+          sum +
+          q.questionText.length +
+          q.correctAnswer.length +
+          q.reference.text.length,
+        0,
+      ),
+    [quiz.questions],
+  );
+
+  const initialQuizFontPx = useMemo(
+    () => estimateInitialFontPx(quizCharCount, 'quiz'),
+    [quizCharCount],
+  );
+  const initialAnswersFontPx = useMemo(
+    () => estimateInitialFontPx(answersCharCount, 'answers'),
+    [answersCharCount],
+  );
+
+  const contentSignature = `${dafRef}:${language}:${quizCharCount}:${answersCharCount}`;
+
   const formatReferenceLocation = (side: 'A' | 'B' | undefined, line: number) => {
     const lineText = tPrint('lineLabel', { line });
     if (side) {
@@ -238,26 +347,31 @@ export function PrintableQuiz({
   return (
     <div className="space-y-8 print:space-y-0">
       {showQuiz && (
-        <ManuscriptFrame testId="printable-quiz-sheet" dir={dir}>
+        <ManuscriptFrame
+          testId="printable-quiz-sheet"
+          dir={dir}
+          initialFontPx={initialQuizFontPx}
+          contentKey={`quiz:${contentSignature}`}
+        >
           {/* Header */}
           <header className="text-center">
             <HeaderFlourish />
 
             <p
               dir="rtl"
-              className="font-judaica mt-1 text-lg font-bold tracking-wide text-[#B8860B]"
+              className="font-judaica mt-[0.15em] text-[0.85em] font-bold tracking-wide text-[#B8860B]"
             >
               {hebrewTitle} • חִידוֹן יוֹמִי
             </p>
 
-            <h1 className="font-judaica mt-0.5 text-3xl font-bold tracking-tight text-[#1B365D]">
+            <h1 className="font-judaica text-[1.5em] font-bold leading-tight tracking-tight text-[#1B365D]">
               {tPrint('quizHeading', { quizName: localizedQuizName })}
             </h1>
 
-            {/* Passage / Daf Reference Banner (white background for ink-friendly printing) */}
-            <div className="mt-2.5 inline-flex items-center gap-2.5 rounded-full border border-[#B8860B] bg-white px-5 py-1 text-base font-semibold text-[#1B365D]">
+            {/* Passage / Daf Reference Banner */}
+            <div className="mt-[0.35em] inline-flex items-center gap-[0.5em] rounded-full border border-[#B8860B] bg-white px-[1em] py-[0.12em] text-[0.88em] font-semibold text-[#1B365D]">
               <span className="text-[#B8860B]">✦</span>
-              <span className="font-judaica-serif text-lg tracking-wide">
+              <span className="font-judaica-serif tracking-wide">
                 {dafRef}
               </span>
               <span className="text-[#B8860B]">✦</span>
@@ -265,7 +379,7 @@ export function PrintableQuiz({
 
             {formattedDateLine && (
               <p
-                className={`mt-1.5 text-xs text-[#475569] ${
+                className={`mt-[0.25em] text-[0.68em] text-[#475569] ${
                   isRtl ? '' : 'uppercase tracking-[0.15em]'
                 }`}
               >
@@ -277,19 +391,19 @@ export function PrintableQuiz({
           <OrnamentalDivider />
 
           {/* Name / Date / Score Bar */}
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-4 rounded border border-[#B8860B]/70 bg-white px-4 py-2.5 text-sm text-[#1B365D]">
-            <div className="flex flex-1 min-w-[180px] items-baseline gap-2">
+          <div className="mb-[0.6em] flex flex-wrap items-end justify-between gap-[0.75em] rounded border border-[#B8860B]/70 bg-white px-[0.8em] py-[0.4em] text-[0.78em] text-[#1B365D]">
+            <div className="flex flex-1 min-w-[140px] items-baseline gap-2">
               <span className="font-judaica font-semibold">{tPrint('nameField')}</span>
               <span className="flex-1 border-b border-dotted border-[#1B365D]/60 pb-0.5" />
             </div>
-            <div className="flex w-40 items-baseline gap-2">
+            <div className="flex w-[9em] items-baseline gap-2">
               <span className="font-judaica font-semibold">{tPrint('dateField')}</span>
               <span className="flex-1 border-b border-dotted border-[#1B365D]/60 pb-0.5" />
             </div>
-            <div className="flex items-center gap-1.5 rounded border border-[#B8860B] bg-white px-2.5 py-0.5 font-judaica font-semibold">
+            <div className="flex items-center gap-1.5 rounded border border-[#B8860B] bg-white px-[0.55em] py-[0.1em] font-judaica font-semibold">
               <span>{tPrint('scoreField')}</span>
               <span dir="ltr" className="inline-flex items-center gap-1">
-                <span className="inline-block w-7 border-b border-[#1B365D]/60 text-center">
+                <span className="inline-block w-[1.8em] border-b border-[#1B365D]/60 text-center">
                   &nbsp;
                 </span>
                 <span>/ {quiz.questions.length}</span>
@@ -298,7 +412,7 @@ export function PrintableQuiz({
           </div>
 
           <p
-            className={`mb-4 text-center font-judaica-serif text-sm text-[#475569] ${
+            className={`mb-[0.55em] text-center font-judaica-serif text-[0.76em] text-[#475569] ${
               isRtl ? '' : 'italic'
             }`}
           >
@@ -306,40 +420,40 @@ export function PrintableQuiz({
           </p>
 
           {/* Questions List */}
-          <ol className="space-y-4">
+          <ol className="space-y-[0.5em]">
             {quiz.questions.map((question, qIndex) => {
               const hebrewNum = HEBREW_LETTERS[qIndex] ?? `${qIndex + 1}`;
               return (
                 <li
                   key={question.questionNumber}
-                  className="print-avoid-break rounded-md border border-[#1B365D]/25 bg-white px-4 py-3 text-start"
+                  className="print-avoid-break rounded-md border border-[#1B365D]/25 bg-white px-[0.8em] py-[0.45em] text-start"
                 >
-                  <div className="flex items-start gap-3">
-                    {/* Crisp Outlined Number Medallion (ink-friendly) */}
-                    <div className="flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-full border-2 border-[#1B365D] bg-white ring-1 ring-[#B8860B]/70 ring-offset-1">
-                      <span className="text-xs font-bold leading-none text-[#1B365D]">
+                  <div className="flex items-start gap-[0.65em]">
+                    {/* Crisp Outlined Number Medallion */}
+                    <div className="flex h-[1.85em] w-[1.85em] shrink-0 flex-col items-center justify-center rounded-full border-2 border-[#1B365D] bg-white ring-1 ring-[#B8860B]/70 ring-offset-1">
+                      <span className="text-[0.7em] font-bold leading-none text-[#1B365D]">
                         {qIndex + 1}
                       </span>
                       <span
                         dir="rtl"
-                        className="font-judaica text-[9px] font-bold leading-none text-[#B8860B]"
+                        className="font-judaica text-[0.52em] font-bold leading-none text-[#B8860B]"
                       >
                         {hebrewNum}
                       </span>
                     </div>
 
                     <div className="flex-1">
-                      <p className="font-judaica text-[15px] font-semibold leading-snug text-[#162338]">
+                      <p className="font-judaica text-[0.86em] font-semibold leading-snug text-[#162338]">
                         {question.questionText}
                       </p>
 
-                      <div className="mt-2.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                      <div className="mt-[0.35em] grid grid-cols-1 gap-x-[0.8em] gap-y-[0.25em] sm:grid-cols-2 print:grid-cols-2">
                         {question.options.map((option, optIndex) => (
                           <div
                             key={optIndex}
-                            className="flex items-start gap-2 text-[13px] leading-snug text-[#1E293B]"
+                            className="flex items-start gap-[0.4em] text-[0.76em] leading-snug text-[#1E293B]"
                           >
-                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#1B365D] bg-white font-judaica text-[11px] font-bold text-[#1B365D]">
+                            <span className="mt-[0.1em] flex h-[1.35em] w-[1.35em] shrink-0 items-center justify-center rounded-full border border-[#1B365D] bg-white font-judaica text-[0.85em] font-bold text-[#1B365D]">
                               {optionLetters[optIndex] ?? optIndex + 1}
                             </span>
                             <span className="flex-1">{option}</span>
@@ -354,26 +468,26 @@ export function PrintableQuiz({
           </ol>
 
           {/* Traditional Closing Quote & Footer */}
-          <footer className="mt-5 text-center">
+          <footer className="mt-[0.65em] text-center">
             <OrnamentalDivider />
             <p
               dir="rtl"
-              className="font-judaica text-sm font-semibold text-[#1B365D]"
+              className="font-judaica text-[0.78em] font-semibold text-[#1B365D]"
             >
               הֲפֹךְ בָּהּ וַהֲפֹךְ בָּהּ דְּכֹלָּא בָהּ
             </p>
             {!isRtl && (
-              <p className="font-judaica-serif text-xs italic text-[#475569]">
+              <p className="font-judaica-serif text-[0.7em] italic text-[#475569]">
                 &ldquo;Turn it and turn it again, for everything is in it.&rdquo; — Pirkei Avot 5:22
               </p>
             )}
             {isRtl && (
-              <p className="font-judaica text-xs text-[#475569]">
+              <p className="font-judaica text-[0.7em] text-[#475569]">
                 פרקי אבות ה׳, כ״ב
               </p>
             )}
             <p
-              className={`mt-1.5 text-[10px] text-[#64748B] ${
+              className={`mt-[0.25em] text-[0.58em] text-[#64748B] ${
                 isRtl ? '' : 'uppercase tracking-[0.15em]'
               }`}
             >
@@ -388,14 +502,16 @@ export function PrintableQuiz({
           pageBreak={showQuiz}
           testId="printable-answer-sheet"
           dir={dir}
+          initialFontPx={initialAnswersFontPx}
+          contentKey={`answers:${contentSignature}`}
         >
           {/* Header */}
           <header className="text-center">
             <HeaderFlourish />
 
-            {/* Crisp Outlined Answer Sheet Ribbon (ink-friendly) */}
-            <div className="mt-1.5 inline-flex items-center gap-2 rounded border-2 border-[#1B365D] bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[#1B365D]">
-              <span dir="rtl" className="font-judaica text-sm tracking-normal text-[#B8860B]">
+            {/* Crisp Outlined Answer Sheet Ribbon */}
+            <div className="mt-[0.25em] inline-flex items-center gap-[0.5em] rounded border-2 border-[#1B365D] bg-white px-[0.9em] py-[0.15em] text-[0.7em] font-bold uppercase tracking-[0.15em] text-[#1B365D]">
+              <span dir="rtl" className="font-judaica text-[1.1em] tracking-normal text-[#B8860B]">
                 מַפְתֵּחַ תְּשׁוּבוֹת
               </span>
               {!isRtl && (
@@ -406,13 +522,13 @@ export function PrintableQuiz({
               )}
             </div>
 
-            <h2 className="font-judaica mt-2 text-2xl font-bold tracking-tight text-[#1B365D]">
+            <h2 className="font-judaica mt-[0.25em] text-[1.25em] font-bold leading-tight tracking-tight text-[#1B365D]">
               {localizedQuizName} — {dafRef}
             </h2>
 
             {formattedDateLine && (
               <p
-                className={`mt-0.5 text-xs text-[#475569] ${
+                className={`mt-[0.15em] text-[0.68em] text-[#475569] ${
                   isRtl ? '' : 'uppercase tracking-[0.15em]'
                 }`}
               >
@@ -423,42 +539,40 @@ export function PrintableQuiz({
 
           <OrnamentalDivider />
 
-          {/* Quick-Check Answer Key Strip */}
+          {/* Compact Single-Row Quick-Check Answer Key Strip */}
           <div
             data-testid="quick-answer-key"
-            className="mb-5 rounded-md border border-[#B8860B] bg-white px-4 py-2.5"
+            className="mb-[0.6em] flex flex-wrap items-center justify-center gap-[0.5em] rounded-md border border-[#B8860B] bg-white px-[0.8em] py-[0.35em]"
           >
-            <p
-              className={`mb-2 text-center font-judaica text-xs font-bold text-[#1B365D] ${
-                isRtl ? '' : 'uppercase tracking-[0.15em]'
+            <span
+              className={`font-judaica text-[0.72em] font-bold text-[#1B365D] ${
+                isRtl ? '' : 'uppercase tracking-[0.12em]'
               }`}
             >
-              {tPrint('quickKeyTitle')}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2.5">
-              {quiz.questions.map((question, qIndex) => {
-                const letter =
-                  optionLetters[question.correctAnswerIndex] ??
-                  String(question.correctAnswerIndex + 1);
-                return (
-                  <div
-                    key={question.questionNumber}
-                    className="flex items-center gap-1.5 rounded border border-[#1B365D]/30 bg-white px-3 py-1 text-sm"
-                  >
-                    <span className="font-judaica font-semibold text-[#475569]">
-                      {tPrint('quickKeyItem', { number: qIndex + 1 })}
-                    </span>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#1B365D] bg-white font-judaica text-xs font-bold text-[#1B365D]">
-                      {letter}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+              {tPrint('quickKeyTitle')}:
+            </span>
+            {quiz.questions.map((question, qIndex) => {
+              const letter =
+                optionLetters[question.correctAnswerIndex] ??
+                String(question.correctAnswerIndex + 1);
+              return (
+                <div
+                  key={question.questionNumber}
+                  className="flex items-center gap-1 rounded border border-[#1B365D]/30 bg-white px-[0.5em] py-[0.1em] text-[0.75em]"
+                >
+                  <span className="font-judaica font-semibold text-[#475569]">
+                    {tPrint('quickKeyItem', { number: qIndex + 1 })}
+                  </span>
+                  <span className="flex h-[1.4em] w-[1.4em] items-center justify-center rounded-full border border-[#1B365D] bg-white font-judaica text-[0.85em] font-bold text-[#1B365D]">
+                    {letter}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Detailed Answers & Source References */}
-          <ol className="space-y-3.5">
+          <ol className="space-y-[0.45em]">
             {quiz.questions.map((question, qIndex) => {
               const hebrewNum = HEBREW_LETTERS[qIndex] ?? `${qIndex + 1}`;
               const correctLetter =
@@ -468,30 +582,30 @@ export function PrintableQuiz({
               return (
                 <li
                   key={question.questionNumber}
-                  className="print-avoid-break rounded-md border border-[#1B365D]/25 bg-white px-4 py-3 text-start"
+                  className="print-avoid-break rounded-md border border-[#1B365D]/25 bg-white px-[0.8em] py-[0.45em] text-start"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 shrink-0 flex-col items-center justify-center rounded-full border border-[#B8860B] bg-white text-[#1B365D]">
-                      <span className="text-[11px] font-bold leading-none">
+                  <div className="flex items-start gap-[0.6em]">
+                    <div className="flex h-[1.6em] w-[1.6em] shrink-0 flex-col items-center justify-center rounded-full border border-[#B8860B] bg-white text-[#1B365D]">
+                      <span className="text-[0.65em] font-bold leading-none">
                         {qIndex + 1}
                       </span>
                       <span
                         dir="rtl"
-                        className="font-judaica text-[8px] font-bold leading-none text-[#B8860B]"
+                        className="font-judaica text-[0.48em] font-bold leading-none text-[#B8860B]"
                       >
                         {hebrewNum}
                       </span>
                     </div>
 
-                    <div className="flex-1 space-y-1.5">
-                      <p className="font-judaica text-sm font-semibold leading-snug text-[#162338]">
+                    <div className="flex-1 space-y-[0.25em]">
+                      <p className="font-judaica text-[0.8em] font-semibold leading-snug text-[#162338]">
                         {question.questionText}
                       </p>
 
-                      {/* Correct Answer Highlight (crisp start gold bar on white) */}
-                      <div className="flex items-start gap-2 rounded border border-[#1B365D]/20 border-s-4 border-s-[#B8860B] bg-white px-2.5 py-1.5 text-[13px] text-[#1B365D]">
-                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[#1B365D] bg-white text-[#1B365D]">
-                          <Check className="h-3 w-3" strokeWidth={3} />
+                      {/* Correct Answer Highlight */}
+                      <div className="flex items-start gap-[0.4em] rounded border border-[#1B365D]/20 border-s-4 border-s-[#B8860B] bg-white px-[0.55em] py-[0.25em] text-[0.74em] leading-snug text-[#1B365D]">
+                        <span className="mt-[0.15em] flex h-[1.2em] w-[1.2em] shrink-0 items-center justify-center rounded-full border border-[#1B365D] bg-white text-[#1B365D]">
+                          <Check className="h-[0.8em] w-[0.8em]" strokeWidth={3} />
                         </span>
                         <div>
                           <span className="font-bold">
@@ -504,7 +618,7 @@ export function PrintableQuiz({
                       </div>
 
                       {/* Source Reference */}
-                      <blockquote className="border-s-2 border-[#B8860B] ps-3 text-xs text-[#475569]">
+                      <blockquote className="border-s-2 border-[#B8860B] ps-[0.6em] text-[0.68em] leading-snug text-[#475569]">
                         <span className="font-semibold not-italic text-[#1B365D]">
                           {tPrint('sourcePrefix', {
                             location: formatReferenceLocation(
@@ -527,26 +641,26 @@ export function PrintableQuiz({
           </ol>
 
           {/* Footer */}
-          <footer className="mt-5 text-center">
+          <footer className="mt-[0.65em] text-center">
             <OrnamentalDivider />
             <p
               dir="rtl"
-              className="font-judaica text-sm font-semibold text-[#1B365D]"
+              className="font-judaica text-[0.78em] font-semibold text-[#1B365D]"
             >
               כָּל הַשּׁוֹנֶה הֲלָכוֹת בְּכָל יוֹם מֻבְטָח לוֹ שֶׁהוּא בֶּן הָעוֹלָם הַבָּא
             </p>
             {!isRtl && (
-              <p className="font-judaica-serif text-xs italic text-[#475569]">
+              <p className="font-judaica-serif text-[0.7em] italic text-[#475569]">
                 &ldquo;Whoever studies Torah laws every day is assured a share in the World to Come.&rdquo; — Megillah 28b
               </p>
             )}
             {isRtl && (
-              <p className="font-judaica text-xs text-[#475569]">
+              <p className="font-judaica text-[0.7em] text-[#475569]">
                 מגילה כ״ח ע״ב
               </p>
             )}
             <p
-              className={`mt-1.5 text-[10px] text-[#64748B] ${
+              className={`mt-[0.25em] text-[0.58em] text-[#64748B] ${
                 isRtl ? '' : 'uppercase tracking-[0.15em]'
               }`}
             >

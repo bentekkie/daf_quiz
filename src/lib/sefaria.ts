@@ -22,7 +22,7 @@ const flattenText = (arr: NestedText): string[] => {
 export async function getTodaysSefariaData(quizType: QuizTypeName, date: YearMonthDay): Promise<SefariaData> {
   const dateTag = YearMonthDayTag(date)
   try {
-    const calendarRes = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${date.year}&month=${date.month}&day=${date.day})}`, {
+    const calendarRes = await fetch(`https://www.sefaria.org/api/calendars?diaspora=1&year=${date.year}&month=${date.month}&day=${date.day}`, {
       next: { revalidate: 86400, tags: ['sefaria-calendar', dateTag] }, // Cache for 24h, but tag with date.
     });
 

@@ -130,3 +130,54 @@
     @apply bg-background text-foreground;
   }
 }
+
+.font-judaica {
+  font-family: "Frank Ruhl Libre", "Cormorant Garamond", "Literata", Georgia, serif;
+}
+
+.font-judaica-serif {
+  font-family: "Cormorant Garamond", "Literata", Georgia, serif;
+}
+
+.judaica-paper {
+  background-color: #ffffff;
+}
+
+@page {
+  size: letter portrait;
+  margin: 0.4in;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #162338 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-sheet {
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  .print-page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

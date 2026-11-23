@@ -1,0 +1,80 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build application
+        env:
+          STUB_AI: "true"
+        run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run integration tests (with stubbed GenAI)
+        env:
+          CI: "true"
+          STUB_AI: "true"
+        run: pnpm test:e2e
+
+      - name: Upload screen & printout screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-screenshots
+          path: test-screenshots/
+          retention-days: 14
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Write screenshot summary
+        if: always()
+        run: |
+          echo "## Integration Test Screenshots" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the \`integration-test-screenshots\` workflow artifact to inspect all captured screens and quiz & answer sheet printouts:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -d test-screenshots ]; then
+            for f in test-screenshots/*.png; do
+              [ -e "$f" ] && echo "- \`$(basename "$f")\`" >> "$GITHUB_STEP_SUMMARY"
+            done
+          fi
